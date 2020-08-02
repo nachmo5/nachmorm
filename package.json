@@ -1,0 +1,30 @@
+{
+  "name": "nachmorm",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx tsc",
+    "dev": "ts-node src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nachmo5/nachmorm.git"
+  },
+  "author": "Mohamed NACHIT",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nachmo5/nachmorm/issues"
+  },
+  "homepage": "https://github.com/nachmo5/nachmorm#readme",
+  "devDependencies": {
+    "tslint": "^6.1.3",
+    "tslint-config-airbnb": "^5.11.2",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {
+    "@types/lodash.snakecase": "^4.1.6",
+    "lodash.snakecase": "^4.1.1"
+  }
+}

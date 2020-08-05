@@ -25,6 +25,8 @@
   },
   "dependencies": {
     "@types/lodash.snakecase": "^4.1.6",
-    "lodash.snakecase": "^4.1.1"
+    "@types/pg": "^7.14.4",
+    "lodash.snakecase": "^4.1.1",
+    "pg": "^8.3.0"
   }
 }

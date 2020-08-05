@@ -2,6 +2,7 @@ import Entity from './interfaces/Entity';
 import Field from './interfaces/Field';
 import ManyToOne from './interfaces/ManyToOne';
 import OneToMany from './interfaces/OneToMany';
+import { customFieldTypes, postgresColumnTypes } from './enums';
 
 export default class Schema {
   $schema: Map<string, Entity> = new Map();
@@ -11,28 +12,47 @@ export default class Schema {
     this.createEntityMap(schema);
   }
 
-  getEntity = (name: string) => {
-    if (!this.$schema.has(name)) {
+  getEntity = (name: string, strict = true) => {
+    if (strict && !this.$schema.has(name)) {
       throw new Error(`Entity ${name} not found in schema`);
     }
     return this.$schema.get(name);
   };
 
-  getField = (entityName: string, fieldName: string) => {
-    const entity: Entity | undefined = this.getEntity(entityName);
+  getField = (entityName: string, fieldName: string, strict = true) => {
+    const entity: Entity | undefined = this.getEntity(entityName, strict);
     if (!entity) return;
     const { fields = [] } = entity;
     const field = fields.find((f: Field) => f.name === fieldName);
-    if (!field) {
-      throw new Error(`Field ${fieldName} of entity ${entityName} not found in schema`);
+    if (strict && !field) {
+      throw new Error(
+        `Field ${fieldName} of entity ${entityName} not found in schema`
+      );
     }
     return field;
   };
 
   getEntities = (): Entity[] => Array.from(this.$schema.values());
 
+  /* ========================================================== */
+  /* ========================= CREATION ===================== */
+  /* ========================================================== */
+
   createEntityMap = (entities: Entity[]) => {
-    entities.forEach((entity) => this.$schema.set(entity.name, entity));
+    entities.forEach((entity) => {
+      const { fields = [] } = entity;
+      // Map field custom types
+      const mappedFields: Field[] = fields.map((field) => {
+        let mappedType = field.type;
+        if (field.type === 'string') mappedType = 'varchar';
+        else if (field.type === 'number') mappedType = 'int';
+        else if (field.type === 'array') mappedType = 'string[]';
+        else if (field.type === 'float') mappedType = 'float8';
+        else if (field.type === 'binary') mappedType = 'bytea';
+        return { ...field, type: mappedType };
+      });
+      this.$schema.set(entity.name, { ...entity, fields: mappedFields });
+    });
   };
 
   /* ========================================================== */
@@ -57,42 +77,44 @@ export default class Schema {
     const { fields = [], manyToOne = [], oneToMany = [] } = entity;
     // Fields
     fields.forEach((field) => this.validateField(field, entity.name));
-    // Entity should have one primary field
-    this.validatePrimary(fields, entity.name);
     // Many To one
-    manyToOne.forEach((mto) => this.validateManyToOne(mto, entity.name, entities));
+    manyToOne.forEach((mto) =>
+      this.validateManyToOne(mto, entity.name, entities)
+    );
     // one to many
-    oneToMany.forEach((otm) => this.validateOneToMany(otm, entity.name, entities));
+    oneToMany.forEach((otm) =>
+      this.validateOneToMany(otm, entity.name, entities)
+    );
   };
 
   validateField = (field: Field, entityName: string) => {
     if (!field) {
       throw new Error(`Null field provided in entity ${entityName}`);
     }
-    const { name, type, constraints = {} } = field;
-    if (!field.name) {
+
+    const { name, type } = field;
+    if (!name) {
       throw new Error(`No name provided for field in ${entityName}`);
     }
-    if (!field.type) {
-      throw new Error(`No type provided for ${field.name} in entity ${entityName}`);
+
+    if (!type) {
+      throw new Error(
+        `No type provided for ${field.name} in entity ${entityName}`
+      );
+    }
+
+    if (![...customFieldTypes, ...postgresColumnTypes].includes(type)) {
+      throw new Error(
+        `Invalid type ${type} provided for ${field.name} in entity ${entityName}`
+      );
     }
   };
 
-  validatePrimary = (fields: Field[], entityName: string) => {
-    if (fields.length === 0) return;
-    let primaryCount = 0;
-    fields.forEach((field) => {
-      if ((field.constraints || {}).primary) primaryCount = primaryCount + 1;
-    });
-    if (primaryCount === 0) {
-      throw new Error(`Entity ${entityName} does not have a primary field`);
-    }
-    if (primaryCount !== 1) {
-      throw new Error(`Entity ${entityName} has multiple primary fields`);
-    }
-  };
-
-  validateManyToOne = (manyToOne: ManyToOne, entityName: string, entities: Entity[]) => {
+  validateManyToOne = (
+    manyToOne: ManyToOne,
+    entityName: string,
+    entities: Entity[]
+  ) => {
     if (!manyToOne) {
       throw new Error(`Null manyToOne provided in entity ${entityName}`);
     }
@@ -114,20 +136,41 @@ export default class Schema {
       );
     }
 
-    const targetEntityObj = entities.find((entity: Entity) => entity.name === targetEntity);
+    const targetEntityObj = entities.find(
+      (entity: Entity) => entity.name === targetEntity
+    );
+
     if (!targetEntityObj) {
       throw new Error(
         `Many to one ${entityName}.${name}: Target entity ${targetEntity} not found in schema`
       );
     }
-    if (!targetEntityObj.fields?.find((field: Field) => field.name === targetField)) {
+
+    const targetFieldObj = targetEntityObj.fields?.find(
+      (field: Field) => field.name === targetField
+    );
+
+    if (!targetFieldObj) {
       throw new Error(
         `Many to one ${entityName}.${name}: Field ${targetField} in entity ${targetEntity} not found in schema`
       );
     }
+
+    if (
+      !targetFieldObj.constraints?.primary ||
+      !targetFieldObj.constraints?.primary
+    ) {
+      throw new Error(
+        `Many to one ${entityName}.${name}: Field ${targetField} in entity ${targetEntity} is not unique or primary`
+      );
+    }
   };
 
-  validateOneToMany = (oneToMany: OneToMany, entityName: string, entities: Entity[]) => {
+  validateOneToMany = (
+    oneToMany: OneToMany,
+    entityName: string,
+    entities: Entity[]
+  ) => {
     if (!oneToMany) {
       throw new Error(`Null oneToMany provided in entity ${entityName}`);
     }
@@ -149,13 +192,19 @@ export default class Schema {
       );
     }
 
-    const targetEntityObj = entities.find((entity) => entity.name === targetEntity);
+    const targetEntityObj = entities.find(
+      (entity) => entity.name === targetEntity
+    );
     if (!targetEntityObj) {
       throw new Error(
         `Many to one ${entityName}.${name}: Target entity ${targetEntity} not found in schema`
       );
     }
-    if (!targetEntityObj.manyToOne?.find((mto: ManyToOne) => mto.name === targetManyToOne)) {
+    if (
+      !targetEntityObj.manyToOne?.find(
+        (mto: ManyToOne) => mto.name === targetManyToOne
+      )
+    ) {
       throw new Error(
         `Many to one ${entityName}.${name}: Manytoone ${targetManyToOne} in entity ${targetEntity} not found in schema`
       );

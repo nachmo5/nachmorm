@@ -1,5 +1,6 @@
 export default interface Constraint {
   primary?: boolean;
-  nullable?: boolean;
+  notNull?: boolean;
   unique?: boolean;
+  defaultValue?: any;
 }

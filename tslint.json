@@ -5,7 +5,8 @@
   "rules": {
     "trailing-comma": false,
     "ter-arrow-parens": false,
-    "semicolon": false
+    "semicolon": false,
+    "align": false
   },
   "rulesDirectory": []
 }

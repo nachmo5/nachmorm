@@ -6,9 +6,8 @@ import DatabaseClient from './DatabaseClient';
 /*
 We use typescript to
 !1. missing validation :/
-2. to know which type of data we use => avoid bugs
+2. to know which type of data we use => avoid bugs + better code
 3. as a documentation for the end user
-
 */
 const entities = [
   {
@@ -41,6 +40,7 @@ const entities = [
       { name: 'firstName', type: 'string' },
       { name: 'lastName', type: 'string' },
     ],
+    manyToOne: [{ name: 'wife', targetEntity: 'Writer', targetField: 'id' }],
     oneToMany: [
       { name: 'books', targetEntity: 'Book', targetManyToOne: 'writer' },
     ],
@@ -63,23 +63,18 @@ const entities = [
   },
 ];
 
-const dico = new Dictionary(entities);
-const schema = new Schema(entities);
-
-// const synchronizer = new Synchronizer(schema, dico);
-
-// synchronizer.getSynchronizeQuery();
-const client = new DatabaseClient({
-  database: 'nachmorm',
-  user: 'postgres',
-  password: 'password',
-  host: '127.0.0.1',
-});
-
 const start = async () => {
+  const dico = new Dictionary(entities);
+  const schema = new Schema(entities);
+  const client = new DatabaseClient({
+    database: 'nachmorm',
+    user: 'postgres',
+    password: 'password',
+    host: '127.0.0.1',
+  });
+
   await client.connect();
-  const synchz = new Synchronizer(schema, dico, client);
-  synchz.synchronize();
+  await new Synchronizer(schema, dico, client).synchronize();
 };
 
 start().then(() => console.log('started...'));

@@ -25,8 +25,8 @@ export default class Synchronizer {
     const databaseSchema = await this.getDatabaseSchema();
     const query = this.buildSchemaQuery(databaseSchema);
     const constraintsQuery = this.buildConstraintsQuery(databaseSchema);
-    console.log([query, constraintsQuery].join('\n\n'));
-    return this.$client.query([query, constraintsQuery].join('\n\n'));
+    console.log([query, constraintsQuery].join('\n'));
+    return this.$client.query([query, constraintsQuery].join('\n'));
   };
 
   // Checking if entity already exists in database then generate alter/create query accordingly

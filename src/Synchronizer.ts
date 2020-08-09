@@ -3,11 +3,7 @@ import Schema from './Schema';
 import DatabaseClient from './DatabaseClient';
 import Entity from './interfaces/Entity';
 import Field from './interfaces/Field';
-import {
-  StringOptions,
-  FloatOptions,
-  DateTimeOptions,
-} from './interfaces/FieldTypeOptions';
+import { StringOptions, FloatOptions, DateTimeOptions } from './interfaces/FieldTypeOptions';
 import ManyToOne from './interfaces/ManyToOne';
 
 export default class Synchronizer {
@@ -25,7 +21,6 @@ export default class Synchronizer {
     const databaseSchema = await this.getDatabaseSchema();
     const query = this.buildSchemaQuery(databaseSchema);
     const constraintsQuery = this.buildConstraintsQuery(databaseSchema);
-    console.log([query, constraintsQuery].join('\n'));
     return this.$client.query([query, constraintsQuery].join('\n'));
   };
 
@@ -48,38 +43,24 @@ export default class Synchronizer {
         const fkConstraints = manyToOne
           .filter((mto) => {
             // add only if the column is didn't exist before
-            const relation = this.$dictionary.getRelation(
-              entity.name,
-              mto.name
-            );
-            return databaseSchema.getField(
-              relation.fromTable,
-              relation.fromColumn,
-              false
-            )
+            const relation = this.$dictionary.getRelation(entity.name, mto.name);
+            return databaseSchema.getField(relation.fromTable, relation.fromColumn, false)
               ? false
               : true;
           })
           .map((mto) => {
-            const relation = this.$dictionary.getRelation(
-              entity.name,
-              mto.name
-            );
+            const relation = this.$dictionary.getRelation(entity.name, mto.name);
             const constraintName = `${relation.fromTable}_${relation.fromColumn}_fkey`;
             return `ADD CONSTRAINT ${constraintName} FOREIGN KEY (${relation.fromColumn}) REFERENCES ${relation.toTable} (${relation.toColumn}) ON DELETE CASCADE`;
           });
         if (fkConstraints.length <= 0) return '';
-        return `ALTER TABLE ${this.$dictionary.getTable(
-          entity.name
-        )} ${fkConstraints.join(', ')};`;
+        return `ALTER TABLE ${this.$dictionary.getTable(entity.name)} ${fkConstraints.join(', ')};`;
       })
       .join('\n');
 
   generateCreateTableQuery = (entity: Entity): string => {
     const { fields = [], manyToOne = [] } = entity;
-    const columns = fields.map((field) =>
-      this.generateColumnQuery(field, entity.name)
-    );
+    const columns = fields.map((field) => this.generateColumnQuery(field, entity.name));
     const foreignKeys = manyToOne.map((mto) =>
       this.generateForeignKeyColumnQuery(mto, entity.name)
     );
@@ -111,30 +92,23 @@ export default class Synchronizer {
       return [...acc, mto];
     }, []);
 
-    const columns = fieldsToCreate.map((field) =>
-      this.generateColumnQuery(field, entity.name)
-    );
+    const columns = fieldsToCreate.map((field) => this.generateColumnQuery(field, entity.name));
 
     const foreignKeys = foreignKeysToCreate.map((mto) =>
       this.generateForeignKeyColumnQuery(mto, entity.name)
     );
 
-    const addColumnQueries = [...columns, ...foreignKeys].map(
-      (column) => `ADD COLUMN ${column}`
-    );
+    const addColumnQueries = [...columns, ...foreignKeys].map((column) => `ADD COLUMN ${column}`);
     if (addColumnQueries.length <= 0) return '';
 
-    return `ALTER TABLE ${this.$dictionary.getTable(
-      entity.name
-    )} \n${addColumnQueries.join(',\n')};\n`;
+    return `ALTER TABLE ${this.$dictionary.getTable(entity.name)} \n${addColumnQueries.join(
+      ',\n'
+    )};\n`;
   };
 
   generateForeignKeyColumnQuery = (mto: ManyToOne, entityName: string) => {
     // Look up referenced field
-    const targetField = this.$schema.getField(
-      mto.targetEntity,
-      mto.targetField
-    );
+    const targetField = this.$schema.getField(mto.targetEntity, mto.targetField);
     if (!targetField) return '';
     const relation = this.$dictionary.getRelation(entityName, mto.name);
     const { fromColumn } = relation;
@@ -155,8 +129,7 @@ export default class Synchronizer {
     if ((typeOptions as DateTimeOptions).precision) {
       options.push((typeOptions as DateTimeOptions).precision);
     }
-    const strTypeOptions =
-      options.length > 0 ? `( ${options.join(', ')} )` : '';
+    const strTypeOptions = options.length > 0 ? `( ${options.join(', ')} )` : '';
     // Constraints
     const strConstraints: string[] = [];
     if (constraints.primary) strConstraints.push('PRIMARY KEY');
@@ -165,12 +138,7 @@ export default class Synchronizer {
     if (constraints.defaultValue) {
       strConstraints.push(`DEFAULT ${constraints.defaultValue}`);
     }
-    return [
-      this.$dictionary.getColumn(entityName, name),
-      type,
-      strTypeOptions,
-      strConstraints,
-    ]
+    return [this.$dictionary.getColumn(entityName, name), type, strTypeOptions, strConstraints]
       .filter((s) => !!s)
       .join(' ');
   };
@@ -180,30 +148,40 @@ export default class Synchronizer {
   /* ========================================================== */
 
   getDatabaseSchema = async (): Promise<Schema> => {
-    const rawSchema = await this.$client.query(`select table_name as tablename, 
-      json_agg((column_name, data_type, character_maximum_length, is_nullable, column_default)) as columns
-      from information_schema.columns where table_schema not in ('information_schema', 'pg_catalog')
-      group by table_name`);
-
+    const rawSchema = await this.$client.query(`
+    select tables.table_name, columns
+    from information_schema.tables as tables
+    left join lateral (
+        select
+            json_agg(
+                (
+                    cols.column_name,
+                    cols.data_type,
+                    cols.character_maximum_length,
+                    cols.is_nullable,
+                    cols.column_default
+                )
+            ) as columns
+        from
+            information_schema.columns as cols
+        where
+            cols.table_name = tables.table_name
+    ) as c on true
+    where tables.table_schema not in ('information_schema', 'pg_catalog')
+    `);
     return new Schema(rawSchema.rows.map(this.tableToEntity));
   };
 
   tableToEntity = (rawTable: any): Entity => {
-    const { tablename, columns = [] } = rawTable;
+    const { table_name, columns = [] } = rawTable;
     return {
-      name: tablename,
-      fields: columns.map(this.columnToField),
+      name: table_name,
+      fields: (columns || []).map(this.columnToField),
     };
   };
 
   columnToField = (column: any): Field => {
-    const {
-      f1: name,
-      f2: type,
-      f3: size,
-      f4: nullable,
-      f5: defaultValue,
-    } = column;
+    const { f1: name, f2: type, f3: size, f4: nullable, f5: defaultValue } = column;
     const typeOptions = size ? { length: size } : {};
     return {
       name,

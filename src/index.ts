@@ -2,6 +2,7 @@ import Dictionary from './Dictionary';
 import Schema from './Schema';
 import Synchronizer from './Synchronizer';
 import DatabaseClient from './DatabaseClient';
+import SelectQueryBuilder from './SelectQueryBuilder';
 
 /*
 We use typescript to
@@ -41,9 +42,7 @@ const entities = [
       { name: 'lastName', type: 'string' },
     ],
     manyToOne: [{ name: 'wife', targetEntity: 'Writer', targetField: 'id' }],
-    oneToMany: [
-      { name: 'books', targetEntity: 'Book', targetManyToOne: 'writer' },
-    ],
+    oneToMany: [{ name: 'books', targetEntity: 'Book', targetManyToOne: 'writer' }],
   },
   {
     name: 'Character',
@@ -53,28 +52,36 @@ const entities = [
     ],
     manyToOne: [{ name: 'book', targetEntity: 'Book', targetField: 'id' }],
   },
-  {
-    name: 'TmpToto',
-    fields: [
-      { name: 'id', type: 'string', constraints: { primary: true } },
-      { name: 'nickName', type: 'string', constraints: { unique: true } },
-    ],
-    manyToOne: [{ name: 'book', targetEntity: 'Book', targetField: 'id' }],
-  },
 ];
 
 const start = async () => {
-  const dico = new Dictionary(entities);
   const schema = new Schema(entities);
+  const dico = new Dictionary(entities);
   const client = new DatabaseClient({
-    database: 'nachmorm',
-    user: 'postgres',
+    database: 'newsense',
+    user: 'softeam',
     password: 'password',
     host: '127.0.0.1',
   });
 
   await client.connect();
-  await new Synchronizer(schema, dico, client).synchronize();
+  // await new Synchronizer(schema, dico, client).synchronize();
+  const qb = new SelectQueryBuilder(schema, dico);
+  const query = qb.selectMany('Book', {
+    name: 'books',
+    fields: ['id', 'title'],
+    manyToOne: [{ name: 'writer', fields: ['id', 'lastName'] }],
+    oneToMany: [{ name: 'characters', fields: ['id', 'nickName'] }],
+  });
+  console.log('Query: ');
+  console.log(query);
+  console.log('');
+  console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+  const result = await client.query(query);
+  console.log('');
+  console.log('Result: ');
+  console.log(JSON.stringify(result.rows, null, 2));
+  console.log('____________________________________');
 };
 
 start().then(() => console.log('started...'));

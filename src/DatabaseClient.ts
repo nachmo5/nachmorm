@@ -9,5 +9,5 @@ export default class DatabaseClient {
   connect = () => this.client.connect();
 
   query = (text: string, values = []): Promise<QueryResult<any>> =>
-    this.client.query(text.trim(), values);
+    this.client.query(text, values);
 }

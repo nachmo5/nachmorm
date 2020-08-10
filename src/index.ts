@@ -42,7 +42,9 @@ const entities = [
       { name: 'lastName', type: 'string' },
     ],
     manyToOne: [{ name: 'wife', targetEntity: 'Writer', targetField: 'id' }],
-    oneToMany: [{ name: 'books', targetEntity: 'Book', targetManyToOne: 'writer' }],
+    oneToMany: [
+      { name: 'books', targetEntity: 'Book', targetManyToOne: 'writer' },
+    ],
   },
   {
     name: 'Character',
@@ -58,21 +60,35 @@ const start = async () => {
   const schema = new Schema(entities);
   const dico = new Dictionary(entities);
   const client = new DatabaseClient({
-    database: 'newsense',
-    user: 'softeam',
+    database: 'nachmorm',
+    user: 'postgres',
     password: 'password',
     host: '127.0.0.1',
   });
 
   await client.connect();
-  // await new Synchronizer(schema, dico, client).synchronize();
+  await new Synchronizer(schema, dico, client).synchronize();
   const qb = new SelectQueryBuilder(schema, dico);
-  const query = qb.selectMany('Book', {
-    name: 'books',
-    fields: ['id', 'title'],
-    manyToOne: [{ name: 'writer', fields: ['id', 'lastName'] }],
-    oneToMany: [{ name: 'characters', fields: ['id', 'nickName'] }],
+  const query = qb.selectMany('Character', {
+    name: 'characters',
+    manyToOne: [
+      { name: 'book', manyToOne: [{ name: 'writer', fields: ['lastName'] }] },
+    ],
   });
+
+  console.log(
+    JSON.stringify(
+      {
+        book: {
+          writer: {
+            lastName: 'DESC',
+          },
+        },
+      },
+      null,
+      2
+    )
+  );
   console.log('Query: ');
   console.log(query);
   console.log('');

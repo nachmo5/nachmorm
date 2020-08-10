@@ -13,27 +13,35 @@ export default class SelectQueryBuilder {
     this.$dictionary = dictionary;
   }
 
-  selectMany = (entityName: string, ast: SelectAst) => this.generateQuery(entityName, ast, true);
+  selectMany = (entityName: string, ast: SelectAst) =>
+    this.generateQuery(entityName, ast, true);
 
   generateQuery = (entityName: string, ast: SelectAst, list: boolean) => {
-    const { name, fields = [], manyToOne = [], oneToMany = [], args = {} } = ast;
-    // Base
-    const baseAlias = this.getAlias('base');
-    let query = this.generateBaseQuery(entityName, baseAlias);
-    // Many to one
+    const { name, manyToOne = [], oneToMany = [], args = {} } = ast;
+    /* ================ LOGIC ============== */
+    const rootBaseAlias = this.getAlias('root.base');
+    let query = this.generateBaseQuery(entityName, rootBaseAlias);
+    // Joins: Many to one
     manyToOne.forEach((mto) => {
-      query = this.addJoinQuery(entityName, query, baseAlias, mto, false);
+      query = this.addJoinQuery(entityName, query, rootBaseAlias, mto, false);
     });
-    // One to many
+    // Joins: One to many
     oneToMany.forEach((otm) => {
-      query = this.addJoinQuery(entityName, query, baseAlias, otm, true);
+      query = this.addJoinQuery(entityName, query, rootBaseAlias, otm, true);
     });
     // Arguments
-    query = this.generateArgumentsWrapper(entityName, query, baseAlias, args);
-    // output
-    query = this.generateOutputWrapper(entityName, query, fields, manyToOne, oneToMany);
+    query = this.generateArgumentsWrapper(
+      entityName,
+      query,
+      rootBaseAlias,
+      args
+    );
+    /* ================ FORMATTING ============== */
+    const baseAlias = this.getAlias('base');
+    // Output
+    const outputQuery = this.generateOutputQuery(entityName, baseAlias, ast);
     // json
-    query = this.generateJsonWrapper(query, name);
+    query = this.generateJsonWrapper(outputQuery, query, baseAlias, name);
     // agg
     if (list) query = this.generateAggregateWrapper(query, name);
     return query;
@@ -41,7 +49,7 @@ export default class SelectQueryBuilder {
 
   generateBaseQuery = (entityName: string, alias: string) => {
     const tableName = this.$dictionary.getTable(entityName);
-    return `SELECT * FROM ${tableName} AS ${alias}`;
+    return `SELECT * FROM ${tableName} AS "${alias}"`;
   };
 
   addJoinQuery = (
@@ -55,13 +63,24 @@ export default class SelectQueryBuilder {
       ? this.$schema.getOneToMany(entityName, relationAst.name)
       : this.$schema.getManyToOne(entityName, relationAst.name);
     if (!relation) {
-      throw new Error(`Relation ${entityName}.${relationAst.name} not found in schema`);
+      throw new Error(
+        `Relation ${entityName}.${relationAst.name} not found in schema`
+      );
     }
     const dbRelation = this.$dictionary.getRelation(entityName, relation.name);
     relationAst.args = relationAst.args || {};
-    relationAst.args.on = [dbRelation.toColumn, `"${alias}"."${dbRelation.fromColumn}"`];
-    const subQuery = this.generateQuery(relation.targetEntity, relationAst, list);
-    return `${query} \nLEFT JOIN LATERAL (${subQuery}) AS ${this.getAlias('j')} ON true`;
+    relationAst.args.on = [
+      dbRelation.toColumn,
+      `"${alias}"."${dbRelation.fromColumn}"`,
+    ];
+    const subQuery = this.generateQuery(
+      relation.targetEntity,
+      relationAst,
+      list
+    );
+    return `${query} \nLEFT JOIN LATERAL (${subQuery}) AS ${this.getAlias(
+      'j'
+    )} ON true`;
   };
 
   generateArgumentsWrapper = (
@@ -70,30 +89,39 @@ export default class SelectQueryBuilder {
     alias: string,
     args: SelectArguments
   ) => {
-    const { where, offset, limit, orderBy, on } = args;
+    const { where, offset, limit, on } = args;
     let queryWithArgs = `${query} WHERE true`;
     if (on) queryWithArgs += ` AND "${alias}"."${on[0]}" = ${on[1]}`;
     return queryWithArgs;
   };
 
-  generateOutputWrapper = (
+  generateOutputQuery = (
     entityName: string,
-    query: string,
-    fields: string[],
-    manyToOne: SelectAst[],
-    oneToMany: SelectAst[]
+    baseAlias: string,
+    ast: SelectAst
   ) => {
-    const alias = this.getAlias('base');
+    const { fields = [], manyToOne = [], oneToMany = [] } = ast;
+    const outputAlias = this.getAlias('o');
     const columns: string[] = fields.map(
-      (fieldName) => `"${alias}"."${this.$dictionary.getColumn(entityName, fieldName)}"`
+      (fieldName) =>
+        `"${baseAlias}"."${this.$dictionary.getColumn(entityName, fieldName)}"`
     );
-    const joinColumns = [...manyToOne, ...oneToMany].map((mto) => `"${alias}"."${mto.name}"`);
-    return `SELECT ${[...columns, ...joinColumns].join(', ')} FROM (${query}) as ${alias}`;
+    const joinColumns = [...manyToOne, ...oneToMany].map(
+      (rel) => `"${baseAlias}"."${rel.name}"`
+    );
+    return `SELECT ${outputAlias} FROM (SELECT ${[
+      ...columns,
+      ...joinColumns,
+    ].join(', ')}) AS ${outputAlias}`;
   };
 
-  generateJsonWrapper = (query: string, alias: string) => {
-    const queryAlias = this.getAlias('jsn');
-    return `SELECT row_to_json(${queryAlias}) AS ${alias} FROM (${query}) AS ${queryAlias}`;
+  generateJsonWrapper = (
+    outputQuery: string,
+    baseQuery: string,
+    baseAlias: string,
+    jsonAlias: string
+  ) => {
+    return `SELECT row_to_json((${outputQuery})) AS ${jsonAlias} FROM (${baseQuery}) AS ${baseAlias}`;
   };
 
   generateAggregateWrapper = (query: string, alias: string) => {

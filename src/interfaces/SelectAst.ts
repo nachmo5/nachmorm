@@ -1,11 +1,13 @@
+import { FlatField } from './Helpers';
+
 export default interface SelectAst {
   name: string;
   fields?: string[];
   args?: SelectArguments;
   manyToOne?: SelectAst[];
   oneToMany?: SelectAst[];
+  sideFields?: FlatField[];
 }
-
 export interface SelectArguments {
   where?: WhereAst;
   offset?: number;
@@ -14,7 +16,8 @@ export interface SelectArguments {
   on?: [string, string];
 }
 
-export interface WhereAst extends Record<string, WhereAst | Predicate | WhereAst[] | undefined> {
+export interface WhereAst
+  extends Record<string, WhereAst | Predicate | WhereAst[] | undefined> {
   _or?: WhereAst[];
   _and?: WhereAst[];
 }

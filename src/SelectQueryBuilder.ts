@@ -1,7 +1,8 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
 import SelectAst, { SelectArguments } from './interfaces/SelectAst';
-import Field from './interfaces/Field';
+import { FlatField } from './interfaces/Helpers';
+import { flattenObject } from './helpers';
 
 export default class SelectQueryBuilder {
   $schema: Schema;
@@ -17,8 +18,20 @@ export default class SelectQueryBuilder {
     this.generateQuery(entityName, ast, true);
 
   generateQuery = (entityName: string, ast: SelectAst, list: boolean) => {
-    const { name, manyToOne = [], oneToMany = [], args = {} } = ast;
-    /* ================ LOGIC ============== */
+    const {
+      name,
+      manyToOne = [],
+      oneToMany = [],
+      args = {},
+      sideFields = [],
+    } = ast;
+    /* ================ Fields Injection ============== */
+    const orderByFields: FlatField[] = this.getOrderByFields(args.orderBy);
+    this.injectSideFieldsToManyToOne(
+      [...sideFields, ...orderByFields],
+      manyToOne
+    );
+    /* ================ BASE QUERY ============== */
     const rootBaseAlias = this.getAlias('root.base');
     let query = this.generateBaseQuery(entityName, rootBaseAlias);
     // Joins: Many to one
@@ -36,14 +49,21 @@ export default class SelectQueryBuilder {
       rootBaseAlias,
       args
     );
-    /* ================ FORMATTING ============== */
+    /* ================ FORMATTING  ============== */
     const baseAlias = this.getAlias('base');
     // Output
     const outputQuery = this.generateOutputQuery(entityName, baseAlias, ast);
     // json
-    query = this.generateJsonWrapper(outputQuery, query, baseAlias, name);
+    query = this.generateJsonWrapper(
+      entityName,
+      outputQuery,
+      query,
+      baseAlias,
+      name,
+      [...sideFields, ...orderByFields]
+    );
     // agg
-    if (list) query = this.generateAggregateWrapper(query, name);
+    if (list) query = this.generateAggregateWrapper(query, name, orderByFields);
     return query;
   };
 
@@ -116,17 +136,47 @@ export default class SelectQueryBuilder {
   };
 
   generateJsonWrapper = (
+    entityName: string,
     outputQuery: string,
     baseQuery: string,
     baseAlias: string,
-    jsonAlias: string
+    jsonAlias: string,
+    sideFields: FlatField[]
   ) => {
-    return `SELECT row_to_json((${outputQuery})) AS ${jsonAlias} FROM (${baseQuery}) AS ${baseAlias}`;
+    // Order by fields
+    const orderByFields = sideFields.map((sideField) => {
+      if (sideField.path.length > 1) {
+        return `"${baseAlias}"."${sideField.alias}"`;
+      }
+      if (sideField.path.length === 1) {
+        const fieldName = sideField.path[0];
+        const columnName = this.$dictionary.getColumn(entityName, fieldName);
+        return `"${baseAlias}"."${columnName}" AS "${sideField.alias}"`;
+      }
+      throw new Error(`Order by field not found ${sideField.alias}`);
+    });
+    // JSON QUERY
+    const outputs = [
+      `row_to_json((${outputQuery})) AS ${jsonAlias}`,
+      ...orderByFields,
+    ];
+    return `SELECT ${outputs.join(', ')} FROM (${baseQuery}) AS ${baseAlias}`;
   };
 
-  generateAggregateWrapper = (query: string, alias: string) => {
+  generateAggregateWrapper = (
+    query: string,
+    alias: string,
+    orderByFields: FlatField[]
+  ) => {
+    // Order by
+    const orderByStrs = orderByFields.map(
+      (obf) => `"${obf.alias}" ${obf.value} NULLS LAST`
+    );
+    const orderByStr =
+      orderByStrs.length > 0 ? ` ORDER BY ${orderByStrs.join(', ')}` : '';
+    // Agg query
     const queryAlias = this.getAlias('agg');
-    return `SELECT coalesce(json_agg("${alias}"), '[]') AS ${alias} FROM (${query}) AS ${queryAlias}`;
+    return `SELECT coalesce(json_agg("${alias}"${orderByStr}), '[]') AS ${alias} FROM (${query}) AS ${queryAlias}`;
   };
 
   getAlias = (prefix: string) => {
@@ -134,5 +184,36 @@ export default class SelectQueryBuilder {
     const alias = `${prefix}_${this.$counterMap[prefix]}`;
     this.$counterMap[prefix] = this.$counterMap[prefix] + 1;
     return alias;
+  };
+
+  getOrderByFields = (orderBy = {}): FlatField[] =>
+    flattenObject(orderBy || {}, [], (path) => ['ob', ...path].join('.'));
+
+  injectSideFieldsToManyToOne = (
+    sideFields: FlatField[],
+    manyToOne: SelectAst[]
+  ) => {
+    sideFields.forEach((orderByField) => {
+      if (orderByField.path.length <= 1) return;
+      const relationName = orderByField.path[0];
+      const mtoIndex = manyToOne.findIndex((mto) => mto.name === relationName);
+      // Truncate path
+      const truncatedField = {
+        ...orderByField,
+        path: orderByField.path.slice(1),
+      };
+      // If join doesn't exists, add it
+      if (mtoIndex === -1) {
+        manyToOne.push({
+          name: relationName,
+          sideFields: [truncatedField],
+        });
+      } else {
+        manyToOne[mtoIndex].sideFields = [
+          ...(manyToOne[mtoIndex].sideFields || []),
+          truncatedField,
+        ];
+      }
+    });
   };
 }

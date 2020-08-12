@@ -8,6 +8,6 @@ export default class DatabaseClient {
 
   connect = () => this.client.connect();
 
-  query = (text: string, values = []): Promise<QueryResult<any>> =>
+  query = (text: string, values: any[] = []): Promise<QueryResult<any>> =>
     this.client.query(text, values);
 }

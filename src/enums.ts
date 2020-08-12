@@ -1,4 +1,10 @@
-export const customFieldTypes = ['string', 'number', 'array', 'float', 'binary'];
+export const customFieldTypes = [
+  'string',
+  'number',
+  'array',
+  'float',
+  'binary',
+];
 
 export const postgresColumnTypes = [
   'bigint',
@@ -59,20 +65,17 @@ export const postgresColumnTypes = [
   'timestamptz',
 ];
 
-export const operatorsMap = {
+export const operatorsMap: { [operator: string]: string } = {
   _eq: '=',
   _neq: '<>',
-  _in: 'in',
-  _nin: 'not in',
+  _in: 'IN',
+  _nin: 'NOT IN',
   _gt: '>',
   _gte: '>=',
   _lt: '<',
   _lte: '<=',
-  _isnull: 'is null',
-  _like: 'like',
-  _ilike: 'like',
-  _nlike: 'not like',
+  _isnull: 'IS NULL',
+  _like: 'LIKE',
+  _ilike: 'ILIKE',
+  _nlike: 'NOT LIKE',
 };
-
-export type PostgresColumnType = typeof postgresColumnTypes[number];
-export type CustomFieldType = typeof customFieldTypes[number];

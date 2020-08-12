@@ -3,6 +3,7 @@ import Schema from './Schema';
 import SelectAst, { SelectArguments } from './interfaces/SelectAst';
 import { FlatField } from './interfaces/Helpers';
 import { flattenObject } from './helpers';
+import WhereBuilder from './WhereBuilder';
 
 export default class SelectQueryBuilder {
   $schema: Schema;
@@ -14,8 +15,10 @@ export default class SelectQueryBuilder {
     this.$dictionary = dictionary;
   }
 
-  selectMany = (entityName: string, ast: SelectAst) =>
-    this.generateQuery(entityName, ast, true);
+  selectMany = (entityName: string, ast: SelectAst) => {
+    this.$counterMap = {};
+    return this.generateQuery(entityName, ast, true);
+  };
 
   generateQuery = (entityName: string, ast: SelectAst, list: boolean) => {
     const {
@@ -112,6 +115,12 @@ export default class SelectQueryBuilder {
     const { where, offset, limit, on } = args;
     let queryWithArgs = `${query} WHERE true`;
     if (on) queryWithArgs += ` AND "${alias}"."${on[0]}" = ${on[1]}`;
+    if (where && typeof where === 'object') {
+      const whereBuilder = new WhereBuilder(this.$schema, this.$dictionary);
+      queryWithArgs += ` AND ${whereBuilder.build(entityName, where, alias)}`;
+    }
+    if (Number.isInteger(offset)) queryWithArgs += ` OFFSET ${offset}`;
+    if (Number.isInteger(limit)) queryWithArgs += ` LIMIT ${limit}`;
     return queryWithArgs;
   };
 
@@ -124,7 +133,10 @@ export default class SelectQueryBuilder {
     const outputAlias = this.getAlias('o');
     const columns: string[] = fields.map(
       (fieldName) =>
-        `"${baseAlias}"."${this.$dictionary.getColumn(entityName, fieldName)}"`
+        `"${baseAlias}"."${this.$dictionary.getColumn(
+          entityName,
+          fieldName
+        )}" AS "${fieldName}"`
     );
     const joinColumns = [...manyToOne, ...oneToMany].map(
       (rel) => `"${baseAlias}"."${rel.name}"`
@@ -170,20 +182,16 @@ export default class SelectQueryBuilder {
   ) => {
     // Order by
     const orderByStrs = orderByFields.map(
-      (obf) => `"${obf.alias}" ${obf.value} NULLS LAST`
+      (obf) =>
+        `"${obf.alias}" ${
+          obf.value.toLowerCase() === 'asc' ? 'ASC' : 'DESC'
+        } NULLS LAST`
     );
     const orderByStr =
       orderByStrs.length > 0 ? ` ORDER BY ${orderByStrs.join(', ')}` : '';
     // Agg query
     const queryAlias = this.getAlias('agg');
     return `SELECT coalesce(json_agg("${alias}"${orderByStr}), '[]') AS ${alias} FROM (${query}) AS ${queryAlias}`;
-  };
-
-  getAlias = (prefix: string) => {
-    if (!this.$counterMap[prefix]) this.$counterMap[prefix] = 0;
-    const alias = `${prefix}_${this.$counterMap[prefix]}`;
-    this.$counterMap[prefix] = this.$counterMap[prefix] + 1;
-    return alias;
   };
 
   getOrderByFields = (orderBy = {}): FlatField[] =>
@@ -215,5 +223,12 @@ export default class SelectQueryBuilder {
         ];
       }
     });
+  };
+
+  getAlias = (prefix: string) => {
+    if (!this.$counterMap[prefix]) this.$counterMap[prefix] = 0;
+    const alias = `${prefix}_${this.$counterMap[prefix]}`;
+    this.$counterMap[prefix] = this.$counterMap[prefix] + 1;
+    return alias;
   };
 }

@@ -3,6 +3,7 @@ import Schema from './Schema';
 import Synchronizer from './Synchronizer';
 import DatabaseClient from './DatabaseClient';
 import SelectQueryBuilder from './SelectQueryBuilder';
+import WhereBuilder from './WhereBuilder';
 
 /*
 We use typescript to
@@ -71,33 +72,87 @@ const start = async () => {
   const qb = new SelectQueryBuilder(schema, dico);
   const query = qb.selectMany('Character', {
     name: 'characters',
+    fields: ['id', 'nickName'],
     manyToOne: [
-      { name: 'book', manyToOne: [{ name: 'writer', fields: ['lastName'] }] },
+      {
+        name: 'book',
+        fields: ['title'],
+        manyToOne: [{ name: 'writer', fields: ['firstName', 'lastName'] }],
+      },
     ],
+    args: {
+      where: {
+        _and: [
+          {
+            _or: [
+              {
+                id: { _eq: '$1' },
+              },
+              {
+                id: { _eq: '$2' },
+              },
+              {
+                book: {
+                  title: { _like: '$3' },
+                },
+              },
+            ],
+          },
+          {
+            book: {
+              writer: {
+                lastName: { _ilike: '$4' },
+              },
+            },
+          },
+        ],
+      },
+      orderBy: {
+        nickName: 'asc',
+      },
+      limit: 2,
+    },
   });
 
-  console.log(
-    JSON.stringify(
-      {
-        book: {
-          writer: {
-            lastName: 'DESC',
-          },
-        },
-      },
-      null,
-      2
-    )
-  );
   console.log('Query: ');
   console.log(query);
   console.log('');
   console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
-  const result = await client.query(query);
+  const result = await client.query(query, ['c1', 'c5', 'And%', 'Co%']);
   console.log('');
   console.log('Result: ');
   console.log(JSON.stringify(result.rows, null, 2));
   console.log('____________________________________');
+  /*
+      _or: [
+        {
+          id: { _eq: `'test1'` },
+          title: { _like: `'test2'`, _gte: `'test3'` },
+          writer: {
+            firstName: { _eq: `'test2'` },
+            books: { title: { _eq: `'test4'` } },
+            _and: [],
+          },
+        },
+        {
+          id: { _eq: `'test1'` },
+          title: { _like: `'test2'`, _gte: `'test3'` },
+          _and: [{ _or: [{ title: { _like: `'test2'` } }] }],
+          _or: [],
+          writer: {
+            _or: [
+              {
+                firstName: { _eq: `'testw2'` },
+              },
+              {
+                books: { title: { _eq: `'testw4'` } },
+              },
+            ],
+          },
+        },
+      ],
+
+*/
 };
 
 start().then(() => console.log('started...'));

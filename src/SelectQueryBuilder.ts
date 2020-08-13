@@ -1,9 +1,10 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
-import SelectAst, { SelectArguments } from './interfaces/SelectAst';
+import SelectAst, { SelectArguments, Aggregate } from './interfaces/SelectAst';
 import { FlatField } from './interfaces/Helpers';
 import { flattenObject } from './helpers';
 import WhereBuilder from './WhereBuilder';
+import WhereAst from './interfaces/WhereAst';
 
 export default class SelectQueryBuilder {
   $schema: Schema;
@@ -15,9 +16,35 @@ export default class SelectQueryBuilder {
     this.$dictionary = dictionary;
   }
 
+  selectOne = (entityName: string, ast: SelectAst) => {
+    this.$counterMap = {};
+    return this.generateQuery(entityName, ast, false);
+  };
+
   selectMany = (entityName: string, ast: SelectAst) => {
     this.$counterMap = {};
     return this.generateQuery(entityName, ast, true);
+  };
+
+  aggregate = (
+    entityName: string,
+    type: Aggregate,
+    param: string | number,
+    where?: WhereAst
+  ) => {
+    const field = this.$schema.getField(entityName, param.toString(), false);
+    const arg = field
+      ? this.$dictionary.getColumn(entityName, field.name)
+      : param;
+    let query = `SELECT ${type}(${arg}) FROM ${this.$dictionary.getTable(
+      entityName
+    )} WHERE TRUE`;
+
+    if (where && typeof where === 'object') {
+      const whereBuilder = new WhereBuilder(this.$schema, this.$dictionary);
+      query += ` AND ${whereBuilder.build(entityName, where)}`;
+    }
+    return query;
   };
 
   generateQuery = (entityName: string, ast: SelectAst, list: boolean) => {

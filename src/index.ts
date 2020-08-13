@@ -70,6 +70,7 @@ const start = async () => {
   await client.connect();
   await new Synchronizer(schema, dico, client).synchronize();
   const qb = new SelectQueryBuilder(schema, dico);
+  /*
   const query = qb.selectMany('Character', {
     name: 'characters',
     fields: ['id', 'nickName'],
@@ -113,12 +114,16 @@ const start = async () => {
       limit: 2,
     },
   });
-
+*/
+  // , ['c1', 'c5', 'And%', 'Co%']
+  const query = qb.aggregate('Book', 'count', 1, {
+    title: { _like: `'A%'` },
+  });
   console.log('Query: ');
   console.log(query);
   console.log('');
   console.log('xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
-  const result = await client.query(query, ['c1', 'c5', 'And%', 'Co%']);
+  const result = await client.query(query);
   console.log('');
   console.log('Result: ');
   console.log(JSON.stringify(result.rows, null, 2));

@@ -16,3 +16,7 @@ export interface SelectArguments {
   orderBy?: any;
   on?: [string, string];
 }
+
+const aggregates = ['count', 'min', 'max', 'avg', 'sum'];
+
+export type Aggregate = typeof aggregates[number];

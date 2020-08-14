@@ -17,6 +17,6 @@ export interface SelectArguments {
   on?: [string, string];
 }
 
-const aggregates = ['count', 'min', 'max', 'avg', 'sum'];
+export const aggregates = ['count', 'min', 'max', 'avg', 'sum'];
 
 export type Aggregate = typeof aggregates[number];

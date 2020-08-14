@@ -1,6 +1,6 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
-import SelectAst, { SelectArguments, Aggregate } from './interfaces/SelectAst';
+import SelectAst, { SelectArguments, Aggregate, aggregates } from './interfaces/SelectAst';
 import { FlatField } from './interfaces/Helpers';
 import { flattenObject } from './helpers';
 import WhereBuilder from './WhereBuilder';
@@ -21,24 +21,18 @@ export default class SelectQueryBuilder {
     return this.generateQuery(entityName, ast, false);
   };
 
-  selectMany = (entityName: string, ast: SelectAst) => {
+  select = (entityName: string, ast: SelectAst) => {
     this.$counterMap = {};
     return this.generateQuery(entityName, ast, true);
   };
 
-  aggregate = (
-    entityName: string,
-    type: Aggregate,
-    param: string | number,
-    where?: WhereAst
-  ) => {
+  aggregate = (entityName: string, type: Aggregate, param: string | number, where: WhereAst) => {
+    if (!aggregates.includes(type)) {
+      throw new Error(`Invalid aggregate function provided ${type}`);
+    }
     const field = this.$schema.getField(entityName, param.toString(), false);
-    const arg = field
-      ? this.$dictionary.getColumn(entityName, field.name)
-      : param;
-    let query = `SELECT ${type}(${arg}) FROM ${this.$dictionary.getTable(
-      entityName
-    )} WHERE TRUE`;
+    const arg = field ? this.$dictionary.getColumn(entityName, field.name) : param;
+    let query = `SELECT ${type}(${arg}) FROM ${this.$dictionary.getTable(entityName)} WHERE TRUE`;
 
     if (where && typeof where === 'object') {
       const whereBuilder = new WhereBuilder(this.$schema, this.$dictionary);
@@ -48,19 +42,10 @@ export default class SelectQueryBuilder {
   };
 
   generateQuery = (entityName: string, ast: SelectAst, list: boolean) => {
-    const {
-      name,
-      manyToOne = [],
-      oneToMany = [],
-      args = {},
-      sideFields = [],
-    } = ast;
+    const { name, manyToOne = [], oneToMany = [], args = {}, sideFields = [] } = ast;
     /* ================ Fields Injection ============== */
     const orderByFields: FlatField[] = this.getOrderByFields(args.orderBy);
-    this.injectSideFieldsToManyToOne(
-      [...sideFields, ...orderByFields],
-      manyToOne
-    );
+    this.injectSideFieldsToManyToOne([...sideFields, ...orderByFields], manyToOne);
     /* ================ BASE QUERY ============== */
     const rootBaseAlias = this.getAlias('root.base');
     let query = this.generateBaseQuery(entityName, rootBaseAlias);
@@ -73,25 +58,16 @@ export default class SelectQueryBuilder {
       query = this.addJoinQuery(entityName, query, rootBaseAlias, otm, true);
     });
     // Arguments
-    query = this.generateArgumentsWrapper(
-      entityName,
-      query,
-      rootBaseAlias,
-      args
-    );
+    query = this.generateArgumentsWrapper(entityName, query, rootBaseAlias, args);
     /* ================ FORMATTING  ============== */
     const baseAlias = this.getAlias('base');
     // Output
     const outputQuery = this.generateOutputQuery(entityName, baseAlias, ast);
     // json
-    query = this.generateJsonWrapper(
-      entityName,
-      outputQuery,
-      query,
-      baseAlias,
-      name,
-      [...sideFields, ...orderByFields]
-    );
+    query = this.generateJsonWrapper(entityName, outputQuery, query, baseAlias, name, [
+      ...sideFields,
+      ...orderByFields,
+    ]);
     // agg
     if (list) query = this.generateAggregateWrapper(query, name, orderByFields);
     return query;
@@ -113,24 +89,13 @@ export default class SelectQueryBuilder {
       ? this.$schema.getOneToMany(entityName, relationAst.name)
       : this.$schema.getManyToOne(entityName, relationAst.name);
     if (!relation) {
-      throw new Error(
-        `Relation ${entityName}.${relationAst.name} not found in schema`
-      );
+      throw new Error(`Relation ${entityName}.${relationAst.name} not found in schema`);
     }
     const dbRelation = this.$dictionary.getRelation(entityName, relation.name);
     relationAst.args = relationAst.args || {};
-    relationAst.args.on = [
-      dbRelation.toColumn,
-      `"${alias}"."${dbRelation.fromColumn}"`,
-    ];
-    const subQuery = this.generateQuery(
-      relation.targetEntity,
-      relationAst,
-      list
-    );
-    return `${query} \nLEFT JOIN LATERAL (${subQuery}) AS ${this.getAlias(
-      'j'
-    )} ON true`;
+    relationAst.args.on = [dbRelation.toColumn, `"${alias}"."${dbRelation.fromColumn}"`];
+    const subQuery = this.generateQuery(relation.targetEntity, relationAst, list);
+    return `${query} \nLEFT JOIN LATERAL (${subQuery}) AS ${this.getAlias('j')} ON true`;
   };
 
   generateArgumentsWrapper = (
@@ -151,27 +116,17 @@ export default class SelectQueryBuilder {
     return queryWithArgs;
   };
 
-  generateOutputQuery = (
-    entityName: string,
-    baseAlias: string,
-    ast: SelectAst
-  ) => {
+  generateOutputQuery = (entityName: string, baseAlias: string, ast: SelectAst) => {
     const { fields = [], manyToOne = [], oneToMany = [] } = ast;
     const outputAlias = this.getAlias('o');
     const columns: string[] = fields.map(
       (fieldName) =>
-        `"${baseAlias}"."${this.$dictionary.getColumn(
-          entityName,
-          fieldName
-        )}" AS "${fieldName}"`
+        `"${baseAlias}"."${this.$dictionary.getColumn(entityName, fieldName)}" AS "${fieldName}"`
     );
-    const joinColumns = [...manyToOne, ...oneToMany].map(
-      (rel) => `"${baseAlias}"."${rel.name}"`
-    );
-    return `SELECT ${outputAlias} FROM (SELECT ${[
-      ...columns,
-      ...joinColumns,
-    ].join(', ')}) AS ${outputAlias}`;
+    const joinColumns = [...manyToOne, ...oneToMany].map((rel) => `"${baseAlias}"."${rel.name}"`);
+    return `SELECT ${outputAlias} FROM (SELECT ${[...columns, ...joinColumns].join(
+      ', '
+    )}) AS ${outputAlias}`;
   };
 
   generateJsonWrapper = (
@@ -195,27 +150,16 @@ export default class SelectQueryBuilder {
       throw new Error(`Order by field not found ${sideField.alias}`);
     });
     // JSON QUERY
-    const outputs = [
-      `row_to_json((${outputQuery})) AS ${jsonAlias}`,
-      ...orderByFields,
-    ];
+    const outputs = [`row_to_json((${outputQuery})) AS ${jsonAlias}`, ...orderByFields];
     return `SELECT ${outputs.join(', ')} FROM (${baseQuery}) AS ${baseAlias}`;
   };
 
-  generateAggregateWrapper = (
-    query: string,
-    alias: string,
-    orderByFields: FlatField[]
-  ) => {
+  generateAggregateWrapper = (query: string, alias: string, orderByFields: FlatField[]) => {
     // Order by
     const orderByStrs = orderByFields.map(
-      (obf) =>
-        `"${obf.alias}" ${
-          obf.value.toLowerCase() === 'asc' ? 'ASC' : 'DESC'
-        } NULLS LAST`
+      (obf) => `"${obf.alias}" ${obf.value.toLowerCase() === 'asc' ? 'ASC' : 'DESC'} NULLS LAST`
     );
-    const orderByStr =
-      orderByStrs.length > 0 ? ` ORDER BY ${orderByStrs.join(', ')}` : '';
+    const orderByStr = orderByStrs.length > 0 ? ` ORDER BY ${orderByStrs.join(', ')}` : '';
     // Agg query
     const queryAlias = this.getAlias('agg');
     return `SELECT coalesce(json_agg("${alias}"${orderByStr}), '[]') AS ${alias} FROM (${query}) AS ${queryAlias}`;
@@ -224,10 +168,7 @@ export default class SelectQueryBuilder {
   getOrderByFields = (orderBy = {}): FlatField[] =>
     flattenObject(orderBy || {}, [], (path) => ['ob', ...path].join('.'));
 
-  injectSideFieldsToManyToOne = (
-    sideFields: FlatField[],
-    manyToOne: SelectAst[]
-  ) => {
+  injectSideFieldsToManyToOne = (sideFields: FlatField[], manyToOne: SelectAst[]) => {
     sideFields.forEach((orderByField) => {
       if (orderByField.path.length <= 1) return;
       const relationName = orderByField.path[0];

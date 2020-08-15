@@ -1,9 +1,7 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
 import DatabaseClient from './DatabaseClient';
-import Entity from './interfaces/Entity';
-import Field, { StringOptions, FloatOptions, DateTimeOptions } from './interfaces/Field';
-import ManyToOne from './interfaces/ManyToOne';
+import { Entity, ManyToOne, Field, StringOptions, FloatOptions, DateTimeOptions } from './typings';
 
 export default class Synchronizer {
   $schema: Schema;

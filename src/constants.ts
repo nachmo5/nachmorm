@@ -1,10 +1,4 @@
-export const customFieldTypes = [
-  'string',
-  'number',
-  'array',
-  'float',
-  'binary',
-];
+export const customFieldTypes = ['string', 'number', 'array', 'float', 'binary'];
 
 export const postgresColumnTypes = [
   'bigint',
@@ -79,3 +73,5 @@ export const operatorsMap: { [operator: string]: string } = {
   _ilike: 'ILIKE',
   _nlike: 'NOT LIKE',
 };
+
+export const aggregates = ['count', 'min', 'max', 'avg', 'sum'];

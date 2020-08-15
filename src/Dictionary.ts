@@ -1,9 +1,5 @@
 import lodashSnakecase from 'lodash.snakecase';
-
-import Entity from './interfaces/Entity';
-import ManyToOne from './interfaces/ManyToOne';
-import OneToMany from './interfaces/OneToMany';
-import Relation from './interfaces/Relation';
+import { Entity, ManyToOne, OneToMany, Relation, IDictionary } from './typings';
 
 export default class Dictionary {
   $dictionary: IDictionary = { names: new Map(), relations: new Map() };
@@ -13,16 +9,12 @@ export default class Dictionary {
     entities.forEach((entity) => {
       const { name, fields = [] } = entity;
       this.addEntity(name, customs[name]);
-      fields.forEach((field) =>
-        this.addField(name, field.name, customs[`${name}.${field.name}`])
-      );
+      fields.forEach((field) => this.addField(name, field.name, customs[`${name}.${field.name}`]));
     });
     // Many To one
     entities.forEach((entity) => {
       const { name, manyToOne = [] } = entity;
-      manyToOne.forEach((mto) =>
-        this.addManyToOne(name, mto, customs[`${name}.${mto.name}`])
-      );
+      manyToOne.forEach((mto) => this.addManyToOne(name, mto, customs[`${name}.${mto.name}`]));
     });
     // One To many
     entities.forEach((entity) => {
@@ -41,11 +33,7 @@ export default class Dictionary {
     this.$dictionary.names.set(`${entityName}.${fieldName}`, columnName);
   };
 
-  addManyToOne = (
-    entityName: string,
-    manyToOne: ManyToOne,
-    custom?: string
-  ) => {
+  addManyToOne = (entityName: string, manyToOne: ManyToOne, custom?: string) => {
     const { name, targetEntity, targetField } = manyToOne;
 
     const foreignKeyName = custom
@@ -76,9 +64,7 @@ export default class Dictionary {
   getTable = (entityName: string) => {
     const table = this.$dictionary.names.get(entityName);
     if (!table) {
-      throw new Error(
-        `Entity ${entityName} has no corresponding table in the dictionary`
-      );
+      throw new Error(`Entity ${entityName} has no corresponding table in the dictionary`);
     }
     return table;
   };
@@ -94,9 +80,7 @@ export default class Dictionary {
   };
 
   getRelation = (entityName: string, relationName: string) => {
-    const relation = this.$dictionary.relations.get(
-      `${entityName}.${relationName}`
-    );
+    const relation = this.$dictionary.relations.get(`${entityName}.${relationName}`);
     if (!relation) {
       throw new Error(
         `Relation ${entityName}.${relationName} has no corresponding relation in the dictionary`
@@ -104,9 +88,4 @@ export default class Dictionary {
     }
     return relation;
   };
-}
-
-interface IDictionary {
-  names: Map<string, string>;
-  relations: Map<string, Relation>;
 }

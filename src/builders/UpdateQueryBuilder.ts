@@ -1,7 +1,7 @@
-import Dictionary from './Dictionary';
-import Schema from './Schema';
-import { forEachObject } from './helpers';
-import WhereAst from './interfaces/WhereAst';
+import Dictionary from '../Dictionary';
+import Schema from '../Schema';
+import { forEachObject } from '../helpers';
+import { WhereAst } from '../typings';
 import WhereBuilder from './WhereBuilder';
 
 export default class UpdateQueryBuilder {

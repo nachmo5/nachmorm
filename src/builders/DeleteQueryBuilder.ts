@@ -1,6 +1,6 @@
-import Dictionary from './Dictionary';
-import Schema from './Schema';
-import WhereAst from './interfaces/WhereAst';
+import { WhereAst } from '../typings';
+import Dictionary from '../Dictionary';
+import Schema from '../Schema';
 import WhereBuilder from './WhereBuilder';
 
 export default class DeleteQueryBuilder {

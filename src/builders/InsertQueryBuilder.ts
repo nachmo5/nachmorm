@@ -1,6 +1,6 @@
-import Dictionary from './Dictionary';
-import Schema from './Schema';
-import { reduceObject } from './helpers';
+import Dictionary from '../Dictionary';
+import Schema from '../Schema';
+import { reduceObject } from '../helpers';
 
 export default class InsertQueryBuilder {
   $schema: Schema;

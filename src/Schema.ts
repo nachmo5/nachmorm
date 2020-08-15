@@ -1,8 +1,5 @@
-import Entity from './interfaces/Entity';
-import Field from './interfaces/Field';
-import ManyToOne from './interfaces/ManyToOne';
-import OneToMany from './interfaces/OneToMany';
-import { customFieldTypes, postgresColumnTypes } from './enums';
+import { Entity, Field, ManyToOne, OneToMany } from './typings';
+import { customFieldTypes, postgresColumnTypes } from './constants';
 
 export default class Schema {
   $schema: Map<string, Entity> = new Map();

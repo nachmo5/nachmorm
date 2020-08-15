@@ -1,15 +1,12 @@
-import Entity from './interfaces/Entity';
-import { Config } from './interfaces/Config';
+import { Entity, Config, SelectAst, Aggregate, WhereAst } from './typings';
 import DatabaseClient from './DatabaseClient';
 import Schema from './Schema';
 import Dictionary from './Dictionary';
 import Synchronizer from './Synchronizer';
-import SelectAst, { Aggregate } from './interfaces/SelectAst';
-import SelectQueryBuilder from './SelectQueryBuilder';
-import WhereAst from './interfaces/WhereAst';
-import InsertQueryBuilder from './InsertQueryBuilder';
-import UpdateQueryBuilder from './UpdateQueryBuilder';
-import DeleteQueryBuilder from './DeleteQueryBuilder';
+import SelectQueryBuilder from './builders/SelectQueryBuilder';
+import InsertQueryBuilder from './builders/InsertQueryBuilder';
+import UpdateQueryBuilder from './builders/UpdateQueryBuilder';
+import DeleteQueryBuilder from './builders/DeleteQueryBuilder';
 
 export default class Nachmorm {
   $schema: Schema;

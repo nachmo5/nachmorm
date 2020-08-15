@@ -1,4 +1,4 @@
-import { FlatField } from './interfaces/Helpers';
+import { FlatField } from './typings';
 
 export const flattenObject = (
   object: { [key: string]: any },
@@ -12,10 +12,7 @@ export const flattenObject = (
       return [...acc, ...flattenObject(value, currentPath, renderAlias)];
     }
 
-    return [
-      ...acc,
-      { value, alias: renderAlias(currentPath, value), path: currentPath },
-    ];
+    return [...acc, { value, alias: renderAlias(currentPath, value), path: currentPath }];
   }, []);
 
 export const forEachObject = (
@@ -27,8 +24,4 @@ export const reduceObject = (
   object: { [name: string]: any },
   callback = (acc: any, key: string, value: any) => {},
   init: any
-) =>
-  Object.keys(object).reduce(
-    (acc, key) => callback(acc, key, object[key]),
-    init
-  );
+) => Object.keys(object).reduce((acc, key) => callback(acc, key, object[key]), init);

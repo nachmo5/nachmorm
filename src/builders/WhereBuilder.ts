@@ -1,8 +1,8 @@
-import Dictionary from './Dictionary';
-import Schema from './Schema';
-import WhereAst, { Predicate } from './interfaces/WhereAst';
-import { forEachObject, reduceObject } from './helpers';
-import { operatorsMap } from './enums';
+import { WhereAst, Predicate } from '../typings';
+import Dictionary from '../Dictionary';
+import Schema from '../Schema';
+import { forEachObject, reduceObject } from '../helpers';
+import { operatorsMap } from '../constants';
 
 export default class WhereBuilder {
   $schema: Schema;
@@ -20,11 +20,7 @@ export default class WhereBuilder {
     return this.buildEntityWhere(entityName, tableName, where);
   };
 
-  buildEntityWhere = (
-    entityName: string,
-    alias: string,
-    where: WhereAst
-  ): string => {
+  buildEntityWhere = (entityName: string, alias: string, where: WhereAst): string => {
     const { _and = [], _or = [], ...fields } = where;
     const conditions: string[] = reduceObject(
       fields,
@@ -32,23 +28,14 @@ export default class WhereBuilder {
         // Field
         const field = this.$schema.getField(entityName, fieldName, false);
         if (field) {
-          return [
-            ...acc,
-            ...this.buildFieldWhere(entityName, alias, field.name, subAst),
-          ];
+          return [...acc, ...this.buildFieldWhere(entityName, alias, field.name, subAst)];
         }
         // Many to one
         const mto = this.$schema.getManyToOne(entityName, fieldName, false);
         if (mto) {
           return [
             ...acc,
-            this.buildRelationWhere(
-              entityName,
-              alias,
-              fieldName,
-              mto.targetEntity,
-              subAst
-            ),
+            this.buildRelationWhere(entityName, alias, fieldName, mto.targetEntity, subAst),
           ];
         }
         // One to many
@@ -56,13 +43,7 @@ export default class WhereBuilder {
         if (otm) {
           return [
             ...acc,
-            this.buildRelationWhere(
-              entityName,
-              alias,
-              fieldName,
-              otm.targetEntity,
-              subAst
-            ),
+            this.buildRelationWhere(entityName, alias, fieldName, otm.targetEntity, subAst),
           ];
         }
         return [...acc];
@@ -74,24 +55,15 @@ export default class WhereBuilder {
       this.buildEntityWhere(entityName, alias, andCondition)
     );
 
-    const orConditionStr: string | null = _or.reduce(
-      (acc: string | null, orCondition) => {
-        const subCondition = this.buildEntityWhere(
-          entityName,
-          alias,
-          orCondition
-        );
-        if (subCondition === '') return acc;
-        if (!acc) return `(${subCondition})`;
-        return `${acc} OR (${subCondition})`;
-      },
-      null
-    );
+    const orConditionStr: string | null = _or.reduce((acc: string | null, orCondition) => {
+      const subCondition = this.buildEntityWhere(entityName, alias, orCondition);
+      if (subCondition === '') return acc;
+      if (!acc) return `(${subCondition})`;
+      return `${acc} OR (${subCondition})`;
+    }, null);
 
     const orConditions = orConditionStr ? [`( ${orConditionStr} )`] : [];
-    const result = [...conditions, ...andConditions, ...orConditions].join(
-      ' AND '
-    );
+    const result = [...conditions, ...andConditions, ...orConditions].join(' AND ');
     return result === '' ? 'true' : result;
   };
 

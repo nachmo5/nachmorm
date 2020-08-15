@@ -1,10 +1,9 @@
-import Dictionary from './Dictionary';
-import Schema from './Schema';
-import SelectAst, { SelectArguments, Aggregate, aggregates } from './interfaces/SelectAst';
-import { FlatField } from './interfaces/Helpers';
-import { flattenObject } from './helpers';
+import Dictionary from '../Dictionary';
+import Schema from '../Schema';
+import { SelectAst, WhereAst, SelectArguments, Aggregate, FlatField } from '../typings';
 import WhereBuilder from './WhereBuilder';
-import WhereAst from './interfaces/WhereAst';
+import { aggregates } from '../constants';
+import { flattenObject } from '../helpers';
 
 export default class SelectQueryBuilder {
   $schema: Schema;

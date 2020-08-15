@@ -1,5 +1,5 @@
 import { Client, QueryResult } from 'pg';
-import { Config } from './interfaces/Config';
+import { Config } from './typings';
 
 export default class DatabaseClient {
   client: Client;

@@ -18,7 +18,7 @@ export default class SelectQueryBuilder {
   selectOne = (entityName: string, ast: SelectAst) => {
     const jsonQuery = this.generateQuery(entityName, ast, false);
     const name = ast.name;
-    return `coalesce((json_agg("${name}") -> 0), 'null') AS "${name}" FROM (${jsonQuery}) AS _final_root`;
+    return `SELECT coalesce((json_agg("${name}") -> 0), 'null') AS "${name}" FROM (${jsonQuery}) AS _final_root`;
   };
 
   select = (entityName: string, ast: SelectAst) => this.generateQuery(entityName, ast, true);

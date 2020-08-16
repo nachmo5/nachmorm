@@ -1,4 +1,4 @@
-import { Entity, Config, SelectAst, Aggregate, WhereAst } from './typings';
+import { Entity, Config, SelectAst, Aggregate, WhereAst, DatabaseOrm } from './typings';
 import DatabaseClient from './DatabaseClient';
 import Schema from './Schema';
 import Dictionary from './Dictionary';
@@ -8,7 +8,7 @@ import InsertQueryBuilder from './builders/InsertQueryBuilder';
 import UpdateQueryBuilder from './builders/UpdateQueryBuilder';
 import DeleteQueryBuilder from './builders/DeleteQueryBuilder';
 
-export default class Nachmorm {
+export default class Nachmorm implements DatabaseOrm {
   $schema: Schema;
   $dictionary: Dictionary;
   $client: DatabaseClient;

@@ -1,6 +1,33 @@
 import { ClientConfig } from 'pg';
 import { aggregates, postgresColumnTypes, customFieldTypes } from './constants';
 
+export interface DatabaseOrm {
+  select(entityName: string, ast: SelectAst, values: any[]): Promise<unknown>;
+
+  selectOne(entityName: string, ast: SelectAst, values: any[]): Promise<unknown>;
+
+  aggregate(
+    entityName: string,
+    type: Aggregate,
+    fieldOrOne: string | number,
+    where: WhereAst,
+    values: any[]
+  ): Promise<unknown>;
+
+  insert(entityName: string, ast: Record<string, unknown>, values: any[]): Promise<number>;
+
+  update(
+    entityName: string,
+    ast: { [fieldName: string]: unknown },
+    where: WhereAst,
+    values: any[]
+  ): Promise<number>;
+
+  delete(entityName: string, where: WhereAst, values: any[]): Promise<number>;
+
+  raw(query: string, values: any[]): Promise<unknown>;
+}
+
 export interface Config {
   connection: ClientConfig;
   logging?: boolean;

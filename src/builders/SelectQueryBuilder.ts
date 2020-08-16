@@ -16,14 +16,12 @@ export default class SelectQueryBuilder {
   }
 
   selectOne = (entityName: string, ast: SelectAst) => {
-    this.$counterMap = {};
-    return this.generateQuery(entityName, ast, false);
+    const jsonQuery = this.generateQuery(entityName, ast, false);
+    const name = ast.name;
+    return `coalesce((json_agg("${name}") -> 0), 'null') AS "${name}" FROM (${jsonQuery}) AS _final_root`;
   };
 
-  select = (entityName: string, ast: SelectAst) => {
-    this.$counterMap = {};
-    return this.generateQuery(entityName, ast, true);
-  };
+  select = (entityName: string, ast: SelectAst) => this.generateQuery(entityName, ast, true);
 
   aggregate = (entityName: string, type: Aggregate, param: string | number, where: WhereAst) => {
     if (!aggregates.includes(type)) {

@@ -34,7 +34,7 @@ export default class Nachmorm implements DatabaseOrm {
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.select(entityName, preparedAst);
     const result = await this.$client.query(query, preparedStatement.values);
-    return result.rows;
+    return result.rows[0];
   };
 
   selectOne = async (entityName: string, ast: SelectAst) => {
@@ -43,7 +43,7 @@ export default class Nachmorm implements DatabaseOrm {
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.selectOne(entityName, preparedAst);
     const result = await this.$client.query(query, preparedStatement.values);
-    return result.rows.length > 0 ? result.rows[0] : null;
+    return result.rows[0];
   };
 
   aggregate = async (

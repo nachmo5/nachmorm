@@ -1,5 +1,6 @@
 import { Entity, Config, SelectAst, Aggregate, WhereAst, DatabaseOrm } from './typings';
 import DatabaseClient from './DatabaseClient';
+import PrepareStatement from './PrepareStatement';
 import Schema from './Schema';
 import Dictionary from './Dictionary';
 import Synchronizer from './Synchronizer';
@@ -27,17 +28,21 @@ export default class Nachmorm implements DatabaseOrm {
     return this;
   };
 
-  select = async (entityName: string, ast: SelectAst, values: any[] = []) => {
+  select = async (entityName: string, ast: SelectAst) => {
+    const preparedStatement = new PrepareStatement();
+    const preparedAst = preparedStatement.prepareSelect(ast);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.select(entityName, ast);
-    const result = await this.$client.query(query, values);
+    const query = qb.select(entityName, preparedAst);
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rows;
   };
 
-  selectOne = async (entityName: string, ast: SelectAst, values: any[] = []) => {
+  selectOne = async (entityName: string, ast: SelectAst) => {
+    const preparedStatement = new PrepareStatement();
+    const preparedAst = preparedStatement.prepareSelect(ast);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.selectOne(entityName, ast);
-    const result = await this.$client.query(query, values);
+    const query = qb.selectOne(entityName, preparedAst);
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rows.length > 0 ? result.rows[0] : null;
   };
 
@@ -45,42 +50,41 @@ export default class Nachmorm implements DatabaseOrm {
     entityName: string,
     type: Aggregate,
     fieldOrOne: string | number,
-    where: WhereAst = {},
-    values: any[] = []
+    where: WhereAst = {}
   ) => {
+    const preparedStatement = new PrepareStatement();
+    const preparedWhere = preparedStatement.prepareWhere(where);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.aggregate(entityName, type.toLowerCase(), fieldOrOne, where);
-    const result = await this.$client.query(query, values);
+    const query = qb.aggregate(entityName, type.toLowerCase(), fieldOrOne, preparedWhere);
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rows.length > 0 ? result.rows[0][type.toLowerCase()] : null;
   };
 
-  insert = async (
-    entityName: string,
-    ast: { [fieldName: string]: unknown },
-    values: any[] = []
-  ) => {
+  insert = async (entityName: string, ast: Record<string, unknown>) => {
+    const preparedStatement = new PrepareStatement();
     const qb = new InsertQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.insert(entityName, ast);
-    const result = await this.$client.query(query, values);
+    const query = qb.insert(entityName, preparedStatement.prepareRecord(ast));
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rowCount;
   };
 
-  update = async (
-    entityName: string,
-    ast: { [fieldName: string]: unknown },
-    where: WhereAst = {},
-    values: any[] = []
-  ) => {
+  update = async (entityName: string, ast: Record<string, unknown>, where: WhereAst = {}) => {
+    const preparedStatement = new PrepareStatement();
     const qb = new UpdateQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.update(entityName, ast, where);
-    const result = await this.$client.query(query, values);
+    const query = qb.update(
+      entityName,
+      preparedStatement.prepareRecord(ast),
+      preparedStatement.prepareWhere(where)
+    );
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rowCount;
   };
 
-  delete = async (entityName: string, where: WhereAst = {}, values: any[] = []) => {
+  delete = async (entityName: string, where: WhereAst = {}) => {
+    const preparedStatement = new PrepareStatement();
     const qb = new DeleteQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.delete(entityName, where);
-    const result = await this.$client.query(query, values);
+    const query = qb.delete(entityName, preparedStatement.prepareWhere(where));
+    const result = await this.$client.query(query, preparedStatement.values);
     return result.rowCount;
   };
 

@@ -31,12 +31,32 @@ export default class InsertQueryBuilder {
     reduceObject(
       ast,
       (acc, fieldName, value) => {
-        const column = this.$dictionary.getColumn(entityName, fieldName);
-        return {
-          ...acc,
-          columns: [...acc.columns, `"${column}"`],
-          values: [...acc.values, value],
-        };
+        const field = this.$schema.getField(entityName, fieldName, false);
+        if (field) {
+          const column = this.$dictionary.getColumn(entityName, field.name);
+          return {
+            ...acc,
+            columns: [...acc.columns, `"${column}"`],
+            values: [...acc.values, value],
+          };
+        }
+        const manyToOne = this.$schema.getManyToOne(entityName, fieldName, false);
+        if (manyToOne) {
+          if (!value[manyToOne.targetField]) {
+            throw new Error(
+              `Invalid insert data provided. field ${manyToOne.name}.${manyToOne.targetField} does not have a value`
+            );
+          }
+          const relation = this.$dictionary.getRelation(entityName, manyToOne.name);
+          return {
+            ...acc,
+            columns: [...acc.columns, `"${relation.fromColumn}"`],
+            values: [...acc.values, value[manyToOne.targetField]],
+          };
+        }
+        throw new Error(
+          `Invalid insert data provided. ${entityName}.${fieldName} is neither a field or a many to one`
+        );
       },
       { columns: [], values: [] }
     );

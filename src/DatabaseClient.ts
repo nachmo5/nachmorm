@@ -1,5 +1,6 @@
 import { Client, QueryResult } from 'pg';
 import { Config } from './typings';
+import { now } from './helpers';
 
 export default class DatabaseClient {
   client: Client;
@@ -13,7 +14,7 @@ export default class DatabaseClient {
 
   query = async (text: string, values: any[] = []): Promise<QueryResult<any>> => {
     if (this.config.logging) {
-      console.log(`[${Date.now()}]`, ': ', text);
+      console.log(`${now()}: ${text}; [${values.join(', ')}]`);
     }
     const start = Date.now();
     const result = await this.client.query(text, values || []);

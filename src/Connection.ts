@@ -9,7 +9,7 @@ import UpdateQueryBuilder from './builders/UpdateQueryBuilder';
 import DeleteQueryBuilder from './builders/DeleteQueryBuilder';
 import PrepareStatement from './PrepareStatement';
 
-export default class Connection {
+export class Connection {
   $schema: Schema;
   $dictionary: Dictionary;
   $client: DatabaseClient;

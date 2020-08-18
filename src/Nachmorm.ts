@@ -3,7 +3,7 @@ import DatabaseClient from './DatabaseClient';
 import Schema from './Schema';
 import Dictionary from './Dictionary';
 import Synchronizer from './Synchronizer';
-import Connection from './Connection';
+import { Connection } from './Connection';
 
 export default class Nachmorm {
   $schema: Schema;

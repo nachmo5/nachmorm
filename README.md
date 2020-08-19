@@ -47,7 +47,27 @@ It will only query the fields that you ask for.
 # Get connection
     const connection = await nachmorm.connect();
 
-# Start querying
+# Simple query
+        const result = await connection.select('Book', {
+          name: 'books',
+          fields: ['id', title],
+        });
+
+# Query With arguments
+    const result = await connection.select('Book', {
+      name: 'books',
+      fields: ['id', 'title'],
+      args: {
+        where: {
+          id: { _eq: 'yourid' },
+        },
+        orderBy: { writer: { name: 'ASC' } },
+        limit: 12,
+        offset: 10,
+      },
+    });
+
+# Multi level query
         const result = await connection.select('Book', {
           name: 'books',
           fields: ['id'],

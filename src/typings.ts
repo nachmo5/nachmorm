@@ -2,9 +2,11 @@ import { ClientConfig } from 'pg';
 import { aggregates, postgresColumnTypes, customFieldTypes } from './constants';
 
 export interface DatabaseOrm {
-  select(entityName: string, ast: SelectAst): Promise<unknown[]>;
+  // connect(synchronize: boolean): Promise<unknown>; handlers don't need to see connect
 
-  selectOne(entityName: string, ast: SelectAst): Promise<unknown>;
+  select(entityName: string, ast: OutputAst): Promise<unknown[]>;
+
+  selectOne(entityName: string, ast: OutputAst): Promise<unknown>;
 
   aggregate(
     entityName: string,
@@ -13,13 +15,9 @@ export interface DatabaseOrm {
     where: WhereAst
   ): Promise<unknown>;
 
-  insert(entityName: string, ast: Record<string, unknown>): Promise<number>;
+  insert(entityName: string, data: Record<string, unknown>): Promise<number>;
 
-  update(
-    entityName: string,
-    ast: { [fieldName: string]: unknown },
-    where: WhereAst
-  ): Promise<number>;
+  update(entityName: string, data: Record<string, unknown>, where: WhereAst): Promise<number>;
 
   delete(entityName: string, where: WhereAst): Promise<number>;
 
@@ -31,6 +29,11 @@ export interface Config {
   logging?: boolean;
 }
 
+export interface OutputAst {
+  name: string;
+  fields?: (string | OutputAst)[];
+  args?: SelectArguments;
+}
 // -------------------------------------------------------------------------
 // Schema
 // -------------------------------------------------------------------------
@@ -97,6 +100,7 @@ export interface SelectAst {
   oneToMany?: SelectAst[];
   sideFields?: FlatField[];
 }
+
 export interface SelectArguments {
   where?: WhereAst;
   offset?: number;

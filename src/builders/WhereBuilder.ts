@@ -46,7 +46,7 @@ export default class WhereBuilder {
             this.buildRelationWhere(entityName, alias, fieldName, otm.targetEntity, subAst),
           ];
         }
-        return [...acc];
+        throw new Error(`Invalid where provided. ${entityName}.${fieldName} does not exist`);
       },
       []
     );

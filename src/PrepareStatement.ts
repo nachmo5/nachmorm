@@ -6,14 +6,13 @@ export default class PrepareStatetement {
   values: unknown[] = [];
   prepareSelect = (ast: SelectAst): SelectAst => {
     const { args = {}, manyToOne = [], oneToMany = [] } = ast;
-    if (!args.where) return ast;
     return {
       ...ast,
       manyToOne: manyToOne.map(this.prepareSelect),
       oneToMany: oneToMany.map(this.prepareSelect),
       args: {
         ...args,
-        where: this.prepareWhere(args.where) as WhereAst,
+        where: this.prepareWhere(args.where || {}) as WhereAst,
       },
     };
   };

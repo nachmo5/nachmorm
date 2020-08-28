@@ -121,9 +121,9 @@ export default class SelectQueryBuilder {
         `"${baseAlias}"."${this.$dictionary.getColumn(entityName, fieldName)}" AS "${fieldName}"`
     );
     const joinColumns = [...manyToOne, ...oneToMany].map((rel) => `"${baseAlias}"."${rel.name}"`);
-    return `SELECT ${outputAlias} FROM (SELECT ${[...columns, ...joinColumns].join(
+    return `SELECT "${outputAlias}" FROM (SELECT ${[...columns, ...joinColumns].join(
       ', '
-    )}) AS ${outputAlias}`;
+    )}) AS "${outputAlias}"`;
   };
 
   generateJsonWrapper = (
@@ -147,8 +147,8 @@ export default class SelectQueryBuilder {
       throw new Error(`Order by field not found ${sideField.alias}`);
     });
     // JSON QUERY
-    const outputs = [`row_to_json((${outputQuery})) AS ${jsonAlias}`, ...orderByFields];
-    return `SELECT ${outputs.join(', ')} FROM (${baseQuery}) AS ${baseAlias}`;
+    const outputs = [`row_to_json((${outputQuery})) AS "${jsonAlias}"`, ...orderByFields];
+    return `SELECT ${outputs.join(', ')} FROM (${baseQuery}) AS "${baseAlias}"`;
   };
 
   generateAggregateWrapper = (query: string, alias: string, orderByFields: FlatField[]) => {
@@ -159,7 +159,7 @@ export default class SelectQueryBuilder {
     const orderByStr = orderByStrs.length > 0 ? ` ORDER BY ${orderByStrs.join(', ')}` : '';
     // Agg query
     const queryAlias = this.getAlias('agg');
-    return `SELECT coalesce(json_agg("${alias}"${orderByStr}), '[]') AS ${alias} FROM (${query}) AS ${queryAlias}`;
+    return `SELECT coalesce(json_agg("${alias}"${orderByStr}), '[]') AS "${alias}" FROM (${query}) AS "${queryAlias}"`;
   };
 
   getOrderByFields = (orderBy = {}): FlatField[] =>

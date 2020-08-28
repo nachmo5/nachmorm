@@ -108,8 +108,8 @@ export default class SelectQueryBuilder {
       const whereBuilder = new WhereBuilder(this.$schema, this.$dictionary);
       queryWithArgs += ` AND ${whereBuilder.build(entityName, where, alias)}`;
     }
-    if (Number.isInteger(offset)) queryWithArgs += ` OFFSET ${offset}`;
-    if (Number.isInteger(limit)) queryWithArgs += ` LIMIT ${limit}`;
+    if (offset && parseInt(offset as string, 10) > 0) queryWithArgs += ` OFFSET ${offset}`;
+    if (limit && parseInt(limit as string, 10) > 0) queryWithArgs += ` LIMIT ${limit}`;
     return queryWithArgs;
   };
 

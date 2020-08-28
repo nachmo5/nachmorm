@@ -80,8 +80,8 @@ export interface SelectAst {
 }
 export interface SelectArguments {
   where?: WhereAst;
-  offset?: number;
-  limit?: number;
+  offset?: number | string;
+  limit?: number | string;
   orderBy?: any;
   on?: [string, string];
 }

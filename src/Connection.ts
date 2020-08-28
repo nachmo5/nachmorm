@@ -1,4 +1,4 @@
-import { SelectAst, Aggregate, WhereAst, OutputAst } from './typings';
+import { Aggregate, WhereAst, OutputAst } from './typings';
 import DatabaseClient from './DatabaseClient';
 import Schema from './Schema';
 import Dictionary from './Dictionary';

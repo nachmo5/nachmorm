@@ -1,5 +1,5 @@
 import { ClientConfig } from 'pg';
-import { aggregates, postgresColumnTypes, customFieldTypes } from './constants';
+import { FieldTypeEnum, AggregateEnum, OperatorEnum } from './enums';
 
 export interface Config {
   connection: ClientConfig;
@@ -24,9 +24,10 @@ export interface Entity {
 
 export interface Field {
   name: string;
-  type: CustomFieldType | PostgresColumnType;
+  type: FieldType;
   typeOptions?: StringOptions | FloatOptions | DateTimeOptions;
   constraints?: Constraints;
+  array?: boolean;
 }
 
 export interface ManyToOne {
@@ -62,10 +63,6 @@ export interface DateTimeOptions {
   precision?: number;
 }
 
-export type PostgresColumnType = typeof postgresColumnTypes[number];
-
-export type CustomFieldType = typeof customFieldTypes[number];
-
 // -------------------------------------------------------------------------
 // Select
 // -------------------------------------------------------------------------
@@ -91,8 +88,6 @@ export interface FlatField {
   value: any;
   alias: string;
 }
-
-export type Aggregate = typeof aggregates[number];
 
 // -------------------------------------------------------------------------
 // Where
@@ -132,3 +127,12 @@ export interface IDictionary {
   names: Map<string, string>;
   relations: Map<string, Relation>;
 }
+
+// -------------------------------------------------------------------------
+// Enum types
+// -------------------------------------------------------------------------
+export type Aggregate = keyof typeof AggregateEnum;
+
+export type FieldType = keyof typeof FieldTypeEnum;
+
+export type Operator = keyof typeof OperatorEnum;

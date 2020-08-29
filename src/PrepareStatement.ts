@@ -1,6 +1,6 @@
 import { SelectAst, WhereAst, Predicate } from './typings';
 import { mapObject } from './helpers';
-import { operatorsMap } from './constants';
+import { OperatorEnum } from './enums';
 import Schema from './Schema';
 
 export default class PrepareStatetement {
@@ -29,7 +29,7 @@ export default class PrepareStatetement {
       where,
       (key: string, value: WhereAst | Predicate | WhereAst[] | undefined) => {
         // SubAST
-        if (!operatorsMap[key]) {
+        if (!Object.keys(OperatorEnum).includes(key)) {
           if (Array.isArray(value)) return value.map(this.prepareWhere);
           if (typeof value === 'object') return this.prepareWhere(value as WhereAst);
         }

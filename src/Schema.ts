@@ -1,5 +1,5 @@
 import { Entity, Field, ManyToOne, OneToMany } from './typings';
-import { customFieldTypes, postgresColumnTypes } from './constants';
+import { FieldTypeEnum } from './enums';
 
 export default class Schema {
   $schema: Map<string, Entity> = new Map();
@@ -56,20 +56,7 @@ export default class Schema {
   /* ========================================================== */
 
   createEntityMap = (entities: Entity[]) => {
-    entities.forEach((entity) => {
-      const { fields = [] } = entity;
-      // Map field custom types
-      const mappedFields: Field[] = fields.map((field) => {
-        let mappedType = field.type;
-        if (field.type === 'string') mappedType = 'varchar';
-        else if (field.type === 'number') mappedType = 'int';
-        else if (field.type === 'array') mappedType = 'varchar[]';
-        else if (field.type === 'float') mappedType = 'float8';
-        else if (field.type === 'binary') mappedType = 'bytea';
-        return { ...field, type: mappedType };
-      });
-      this.$schema.set(entity.name, { ...entity, fields: mappedFields });
-    });
+    entities.forEach((entity) => this.$schema.set(entity.name, entity));
   };
 
   /* ========================================================== */
@@ -104,7 +91,6 @@ export default class Schema {
     if (!field) {
       throw new Error(`Null field provided in entity ${entityName}`);
     }
-
     const { name, type } = field;
     if (!name) {
       throw new Error(`No name provided for field in ${entityName}`);
@@ -114,8 +100,7 @@ export default class Schema {
       throw new Error(`No type provided for ${field.name} in entity ${entityName}`);
     }
 
-    if (![...customFieldTypes, ...postgresColumnTypes].includes(type.toLowerCase())) {
-      console.log(type);
+    if (!Object.keys(FieldTypeEnum).includes(type.toLowerCase())) {
       throw new Error(`Invalid type ${type} provided for ${field.name} in entity ${entityName}`);
     }
   };

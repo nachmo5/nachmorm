@@ -2,7 +2,7 @@ import Dictionary from '../Dictionary';
 import Schema from '../Schema';
 import { SelectAst, WhereAst, SelectArguments, Aggregate, FlatField } from '../typings';
 import WhereBuilder from './WhereBuilder';
-import { aggregates } from '../constants';
+import { AggregateEnum } from '../enums';
 import { flattenObject } from '../helpers';
 
 export default class SelectQueryBuilder {
@@ -24,7 +24,7 @@ export default class SelectQueryBuilder {
   select = (entityName: string, ast: SelectAst) => this.generateQuery(entityName, ast, true);
 
   aggregate = (entityName: string, type: Aggregate, param: string | number, where: WhereAst) => {
-    if (!aggregates.includes(type)) {
+    if (!Object.keys(AggregateEnum).includes(type.toLowerCase())) {
       throw new Error(`Invalid aggregate function provided ${type}`);
     }
     const field = this.$schema.getField(entityName, param.toString(), false);

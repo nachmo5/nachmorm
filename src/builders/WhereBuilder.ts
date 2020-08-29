@@ -1,8 +1,8 @@
-import { WhereAst, Predicate } from '../typings';
+import { WhereAst, Predicate, Operator } from '../typings';
 import Dictionary from '../Dictionary';
 import Schema from '../Schema';
 import { forEachObject, reduceObject } from '../helpers';
-import { operatorsMap } from '../constants';
+import { OperatorEnum } from '../enums';
 
 export default class WhereBuilder {
   $schema: Schema;
@@ -75,7 +75,7 @@ export default class WhereBuilder {
   ) => {
     const column = this.$dictionary.getColumn(entityName, fieldName);
     return forEachObject(predicate, (operator, value) =>
-      this.buildOperation(`"${alias}"."${column}"`, operator, value)
+      this.buildOperation(`"${alias}"."${column}"`, operator as Operator, value)
     );
   };
 
@@ -97,18 +97,18 @@ export default class WhereBuilder {
     )} ) )`;
   };
 
-  buildOperation = (operand: string, operator: string, value: any) => {
-    const op: string = operatorsMap[operator];
+  buildOperation = (operand: string, operator: Operator, value: any) => {
+    const op: string = OperatorEnum[operator];
     if (!op) {
       throw new Error(`Invalid operator ${operator}`);
     }
     if (operator === '_in' || operator === '_nin') {
-      return `${operand} ${operatorsMap[operator]} (${value.join(', ')})`;
+      return `${operand} ${OperatorEnum[operator]} (${value.join(', ')})`;
     }
     if (operator === '_isnull') {
       return `${operand} ${value ? 'IS NULL' : 'IS NOT NULL'}`;
     }
-    return `${operand} ${operatorsMap[operator]} ${value}`;
+    return `${operand} ${OperatorEnum[operator]} ${value}`;
   };
 
   getAlias = (prefix: string) => {

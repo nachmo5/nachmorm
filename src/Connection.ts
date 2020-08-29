@@ -51,7 +51,7 @@ export class Connection {
     const preparedStatement = new PrepareStatement(this.$schema);
     const preparedWhere = preparedStatement.prepareWhere(where);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.aggregate(entityName, type.toLowerCase(), fieldOrOne, preparedWhere);
+    const query = qb.aggregate(entityName, type, fieldOrOne, preparedWhere);
     const result = await this.$client.query(query, preparedStatement.values);
     return result.rows.length > 0 ? result.rows[0][type.toLowerCase()] : null;
   };

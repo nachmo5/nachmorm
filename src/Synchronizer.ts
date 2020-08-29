@@ -116,7 +116,7 @@ export default class Synchronizer {
   };
 
   generateColumnQuery = (field: Field, entityName: string): string => {
-    const { name, type, constraints = {}, typeOptions = {} } = field;
+    const { name, type, constraints = {}, typeOptions = {}, array } = field;
     // Type options
     const options = [];
     if ((typeOptions as StringOptions).length) {
@@ -138,7 +138,12 @@ export default class Synchronizer {
     if (constraints.defaultValue) {
       strConstraints.push(`DEFAULT ${constraints.defaultValue}`);
     }
-    return [this.$dictionary.getColumn(entityName, name), type, strTypeOptions, strConstraints]
+    return [
+      this.$dictionary.getColumn(entityName, name),
+      type + (array ? '[]' : ''),
+      strTypeOptions,
+      strConstraints,
+    ]
       .filter((s) => !!s)
       .join(' ');
   };

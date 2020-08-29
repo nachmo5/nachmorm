@@ -190,8 +190,8 @@ export default class Synchronizer {
     const typeOptions = size ? { length: size } : {};
     return {
       name,
-      type,
       typeOptions,
+      type: type === 'ARRAY' ? 'varchar' : type,
       constraints: { defaultValue, notNull: !nullable },
     };
   };

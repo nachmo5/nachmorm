@@ -48,7 +48,7 @@ export default class PrepareStatetement {
 
   prepareRecord = (ast: Record<string, unknown>, entityName: string) =>
     mapObject(ast, (fieldName: any, value: unknown) => {
-      if (this.$schema.getField(entityName, fieldName)) {
+      if (this.$schema.getField(entityName, fieldName, false)) {
         const param = this.getParam();
         this.values = [...this.values, value];
         return param;

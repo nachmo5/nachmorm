@@ -63,7 +63,7 @@ export default class Schema {
         let mappedType = field.type;
         if (field.type === 'string') mappedType = 'varchar';
         else if (field.type === 'number') mappedType = 'int';
-        else if (field.type === 'array') mappedType = 'string[]';
+        else if (field.type === 'array') mappedType = 'varchar[]';
         else if (field.type === 'float') mappedType = 'float8';
         else if (field.type === 'binary') mappedType = 'bytea';
         return { ...field, type: mappedType };
@@ -114,7 +114,8 @@ export default class Schema {
       throw new Error(`No type provided for ${field.name} in entity ${entityName}`);
     }
 
-    if (![...customFieldTypes, ...postgresColumnTypes].includes(type)) {
+    if (![...customFieldTypes, ...postgresColumnTypes].includes(type.toLowerCase())) {
+      console.log(type);
       throw new Error(`Invalid type ${type} provided for ${field.name} in entity ${entityName}`);
     }
   };

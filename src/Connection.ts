@@ -24,7 +24,7 @@ export class Connection {
 
   select = async (entityName: string, ast: OutputAst) => {
     const selectAst = mapOutputAst(ast, entityName, this.$schema);
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const preparedAst = preparedStatement.prepareSelect(selectAst);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.select(entityName, preparedAst);
@@ -34,7 +34,7 @@ export class Connection {
 
   selectOne = async (entityName: string, ast: OutputAst) => {
     const selectAst = mapOutputAst(ast, entityName, this.$schema);
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const preparedAst = preparedStatement.prepareSelect(selectAst);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.selectOne(entityName, preparedAst);
@@ -48,7 +48,7 @@ export class Connection {
     fieldOrOne: string | number,
     where: WhereAst = {}
   ) => {
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const preparedWhere = preparedStatement.prepareWhere(where);
     const qb = new SelectQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.aggregate(entityName, type.toLowerCase(), fieldOrOne, preparedWhere);
@@ -57,19 +57,19 @@ export class Connection {
   };
 
   insert = async (entityName: string, ast: Record<string, unknown>) => {
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const qb = new InsertQueryBuilder(this.$schema, this.$dictionary);
-    const query = qb.insert(entityName, preparedStatement.prepareRecord(ast));
+    const query = qb.insert(entityName, preparedStatement.prepareRecord(ast, entityName));
     const result = await this.$client.query(query, preparedStatement.values);
     return result.rowCount;
   };
 
   update = async (entityName: string, ast: Record<string, unknown>, where: WhereAst = {}) => {
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const qb = new UpdateQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.update(
       entityName,
-      preparedStatement.prepareRecord(ast),
+      preparedStatement.prepareRecord(ast, entityName),
       preparedStatement.prepareWhere(where)
     );
     const result = await this.$client.query(query, preparedStatement.values);
@@ -77,7 +77,7 @@ export class Connection {
   };
 
   delete = async (entityName: string, where: WhereAst = {}) => {
-    const preparedStatement = new PrepareStatement();
+    const preparedStatement = new PrepareStatement(this.$schema);
     const qb = new DeleteQueryBuilder(this.$schema, this.$dictionary);
     const query = qb.delete(entityName, preparedStatement.prepareWhere(where));
     const result = await this.$client.query(query, preparedStatement.values);

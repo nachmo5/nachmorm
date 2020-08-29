@@ -1,9 +1,16 @@
 import { SelectAst, WhereAst, Predicate } from './typings';
 import { mapObject } from './helpers';
 import { operatorsMap } from './constants';
+import Schema from './Schema';
 
 export default class PrepareStatetement {
   values: unknown[] = [];
+  $schema: Schema;
+
+  constructor(schema: Schema) {
+    this.$schema = schema;
+  }
+
   prepareSelect = (ast: SelectAst): SelectAst => {
     const { args = {}, manyToOne = [], oneToMany = [] } = ast;
     return {
@@ -39,14 +46,26 @@ export default class PrepareStatetement {
       }
     );
 
-  prepareRecord = (ast: Record<string, unknown>) =>
-    mapObject(ast, (key: any, value: unknown) => {
-      if (typeof value === 'object') {
-        return this.prepareRecord(value as Record<string, unknown>);
+  prepareRecord = (ast: Record<string, unknown>, entityName: string) =>
+    mapObject(ast, (fieldName: any, value: unknown) => {
+      if (this.$schema.getField(entityName, fieldName)) {
+        const param = this.getParam();
+        this.values = [...this.values, value];
+        return param;
       }
-      const param = this.getParam();
-      this.values = [...this.values, value];
-      return param;
+
+      const mto = this.$schema.getManyToOne(entityName, fieldName, false);
+      if (mto) {
+        return this.prepareRecord(value as Record<string, unknown>, mto.targetEntity);
+      }
+      const otm = this.$schema.getOneToMany(entityName, fieldName, false);
+      if (otm) {
+        return (value as []).map((el) =>
+          this.prepareRecord(el as Record<string, unknown>, otm.targetEntity)
+        );
+      }
+
+      throw new Error(`Invalid field provided ${entityName}.${fieldName}`);
     });
 
   getParam = (offset = 0) => `$${this.values.length + 1 + offset}`;

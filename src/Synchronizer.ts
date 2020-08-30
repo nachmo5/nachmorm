@@ -140,7 +140,7 @@ export default class Synchronizer {
     if (constraints.notNull) strConstraints.push('NOT NULL');
     if (constraints.defaultValue) {
       let parsedDefaultValue: string = '';
-      if (Object.keys(ReservedDefaultValueEnum).includes(parsedDefaultValue)) {
+      if (Object.keys(ReservedDefaultValueEnum).includes(constraints.defaultValue as string)) {
         parsedDefaultValue = constraints.defaultValue as string;
       } else if (typeof constraints.defaultValue === 'string') {
         parsedDefaultValue = `'${constraints.defaultValue}'`;

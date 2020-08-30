@@ -79,3 +79,16 @@ export enum AggregateEnum {
   'avg',
   'sum',
 }
+
+export enum ReservedDefaultValueEnum {
+  'clock_timestamp()',
+  current_date,
+  current_time,
+  current_timestamp,
+  localtime,
+  localtimestamp,
+  'now()',
+  'statement_timestamp()',
+  'timeofday()',
+  'transaction_timestamp()',
+}

@@ -1,5 +1,5 @@
 import { ClientConfig } from 'pg';
-import { FieldTypeEnum, AggregateEnum, OperatorEnum } from './enums';
+import { FieldTypeEnum, AggregateEnum, OperatorEnum, ReservedDefaultValueEnum } from './enums';
 
 export interface Config {
   connection: ClientConfig;
@@ -47,7 +47,7 @@ export interface Constraints {
   primary?: boolean;
   notNull?: boolean;
   unique?: boolean;
-  defaultValue?: any;
+  defaultValue?: ReservedDefaultValue | unknown;
 }
 
 export interface StringOptions {
@@ -136,3 +136,5 @@ export type Aggregate = keyof typeof AggregateEnum;
 export type FieldType = keyof typeof FieldTypeEnum;
 
 export type Operator = keyof typeof OperatorEnum;
+
+export type ReservedDefaultValue = keyof typeof ReservedDefaultValueEnum;

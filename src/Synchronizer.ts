@@ -1,6 +1,7 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
 import DatabaseClient from './DatabaseClient';
+import { ReservedDefaultValueEnum } from './enums';
 import { Entity, ManyToOne, Field, StringOptions, FloatOptions, DateTimeOptions } from './typings';
 
 export default class Synchronizer {
@@ -136,17 +137,21 @@ export default class Synchronizer {
     if (constraints.unique) strConstraints.push('UNIQUE');
     if (constraints.notNull) strConstraints.push('NOT NULL');
     if (constraints.defaultValue) {
-      const parsedDefaultValue =
-        typeof constraints.defaultValue !== 'string'
-          ? JSON.stringify(constraints.defaultValue)
-          : constraints.defaultValue;
-      strConstraints.push(`DEFAULT '${parsedDefaultValue}'`);
+      let parsedDefaultValue: string = '';
+      if (Object.keys(ReservedDefaultValueEnum).includes(parsedDefaultValue)) {
+        parsedDefaultValue = constraints.defaultValue as string;
+      } else if (typeof constraints.defaultValue === 'string') {
+        parsedDefaultValue = `'${constraints.defaultValue}'`;
+      } else {
+        parsedDefaultValue = `'${JSON.stringify(constraints.defaultValue)}'`;
+      }
+      strConstraints.push(`DEFAULT ${parsedDefaultValue}`);
     }
     return [
       this.$dictionary.getColumn(entityName, name),
       type + (array ? '[]' : ''),
       strTypeOptions,
-      strConstraints,
+      strConstraints.join(' '),
     ]
       .filter((s) => !!s)
       .join(' ');

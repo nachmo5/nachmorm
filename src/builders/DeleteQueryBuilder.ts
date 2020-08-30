@@ -15,6 +15,6 @@ export default class DeleteQueryBuilder {
   delete = (entityName: string, where: WhereAst = {}) => {
     const table = this.$dictionary.getTable(entityName);
     const whereStr = new WhereBuilder(this.$schema, this.$dictionary).build(entityName, where);
-    return `DELETE FROM ${table} WHERE ${whereStr}`;
+    return `DELETE FROM "${table}" WHERE ${whereStr}`;
   };
 }

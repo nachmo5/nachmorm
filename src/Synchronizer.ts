@@ -51,10 +51,12 @@ export default class Synchronizer {
           .map((mto) => {
             const relation = this.$dictionary.getRelation(entity.name, mto.name);
             const constraintName = `${relation.fromTable}_${relation.fromColumn}_fkey`;
-            return `ADD CONSTRAINT ${constraintName} FOREIGN KEY (${relation.fromColumn}) REFERENCES ${relation.toTable} (${relation.toColumn}) ON DELETE CASCADE`;
+            return `ADD CONSTRAINT ${constraintName} FOREIGN KEY ("${relation.fromColumn}") REFERENCES "${relation.toTable}" ("${relation.toColumn}") ON DELETE CASCADE`;
           });
         if (fkConstraints.length <= 0) return '';
-        return `ALTER TABLE ${this.$dictionary.getTable(entity.name)} ${fkConstraints.join(', ')};`;
+        return `ALTER TABLE "${this.$dictionary.getTable(entity.name)}" ${fkConstraints.join(
+          ', '
+        )};`;
       })
       .filter((e) => e !== '')
       .join('\n');
@@ -65,7 +67,7 @@ export default class Synchronizer {
     const foreignKeys = manyToOne.map((mto) =>
       this.generateForeignKeyColumnQuery(mto, entity.name)
     );
-    return `CREATE TABLE ${this.$dictionary.getTable(entity.name)} (\n${[
+    return `CREATE TABLE "${this.$dictionary.getTable(entity.name)}" (\n${[
       ...columns,
       ...foreignKeys,
     ].join(',\n')});\n`;
@@ -102,7 +104,7 @@ export default class Synchronizer {
     const addColumnQueries = [...columns, ...foreignKeys].map((column) => `ADD COLUMN ${column}`);
     if (addColumnQueries.length <= 0) return '';
 
-    return `ALTER TABLE ${this.$dictionary.getTable(entity.name)} \n${addColumnQueries.join(
+    return `ALTER TABLE "${this.$dictionary.getTable(entity.name)}" \n${addColumnQueries.join(
       ',\n'
     )};\n`;
   };
@@ -113,7 +115,7 @@ export default class Synchronizer {
     if (!targetField) return '';
     const relation = this.$dictionary.getRelation(entityName, mto.name);
     const { fromColumn } = relation;
-    return [fromColumn, targetField.type].filter((s) => !!s).join(' ');
+    return [`"${fromColumn}"`, targetField.type].filter((s) => !!s).join(' ');
   };
 
   generateColumnQuery = (field: Field, entityName: string): string => {
@@ -148,7 +150,7 @@ export default class Synchronizer {
       strConstraints.push(`DEFAULT ${parsedDefaultValue}`);
     }
     return [
-      this.$dictionary.getColumn(entityName, name),
+      `"${this.$dictionary.getColumn(entityName, name)}"`,
       type + (array ? '[]' : ''),
       strTypeOptions,
       strConstraints.join(' '),

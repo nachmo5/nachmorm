@@ -14,7 +14,7 @@ export default class InsertQueryBuilder {
   insert = (entityName: string, ast: { [fieldName: string]: unknown }) => {
     const table = this.$dictionary.getTable(entityName);
     const { columns, values } = this.mapAst(entityName, ast);
-    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')})`;
+    return `INSERT INTO "${table}" (${columns.join(', ')}) VALUES (${values.join(', ')})`;
   };
 
   insertMany = (entityName: string, ast: { [fieldName: string]: unknown }[]) => {
@@ -24,7 +24,7 @@ export default class InsertQueryBuilder {
     const { columns } = rows[0];
 
     const batchValues = rows.map(({ values }) => `(${values.join(', ')})`);
-    return `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${batchValues.join(',')}`;
+    return `INSERT INTO "${table}" (${columns.join(', ')}) VALUES ${batchValues.join(',')}`;
   };
 
   mapAst = (entityName: string, ast: { [fieldName: string]: unknown }) =>

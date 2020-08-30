@@ -36,6 +36,6 @@ export default class UpdateQueryBuilder {
       );
     });
     const whereStr = new WhereBuilder(this.$schema, this.$dictionary).build(entityName, where);
-    return `UPDATE ${table} SET ${values.join(', ')} WHERE ${whereStr}`;
+    return `UPDATE "${table}" SET ${values.join(', ')} WHERE ${whereStr}`;
   };
 }

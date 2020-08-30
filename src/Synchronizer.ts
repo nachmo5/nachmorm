@@ -136,7 +136,11 @@ export default class Synchronizer {
     if (constraints.unique) strConstraints.push('UNIQUE');
     if (constraints.notNull) strConstraints.push('NOT NULL');
     if (constraints.defaultValue) {
-      strConstraints.push(`DEFAULT ${constraints.defaultValue}`);
+      const parsedDefaultValue =
+        typeof constraints.defaultValue !== 'string'
+          ? JSON.stringify(constraints.defaultValue)
+          : constraints.defaultValue;
+      strConstraints.push(`DEFAULT '${parsedDefaultValue}'`);
     }
     return [
       this.$dictionary.getColumn(entityName, name),

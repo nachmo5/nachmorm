@@ -1,7 +1,7 @@
 import Dictionary from './Dictionary';
 import Schema from './Schema';
 import DatabaseClient from './DatabaseClient';
-import { ReservedDefaultValueEnum } from './enums';
+import { ReservedDefaultValueEnum, FieldTypeEnum } from './enums';
 import { Entity, ManyToOne, Field, StringOptions, FloatOptions, DateTimeOptions } from './typings';
 
 export default class Synchronizer {
@@ -172,7 +172,7 @@ export default class Synchronizer {
             json_agg(
                 (
                     cols.column_name,
-                    cols.data_type,
+                    cols.udt_name,
                     cols.character_maximum_length,
                     cols.is_nullable,
                     cols.column_default
@@ -202,7 +202,7 @@ export default class Synchronizer {
     return {
       name,
       typeOptions,
-      type: type === 'ARRAY' ? 'varchar' : type,
+      type: Object.keys(FieldTypeEnum).includes(type) ? type : 'varchar',
       constraints: { defaultValue, notNull: !nullable },
     };
   };

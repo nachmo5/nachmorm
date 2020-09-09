@@ -72,7 +72,7 @@ export default class SelectQueryBuilder {
 
   generateBaseQuery = (entityName: string, alias: string) => {
     const tableName = this.$dictionary.getTable(entityName);
-    return `SELECT * FROM ${tableName} AS "${alias}"`;
+    return `SELECT * FROM "${tableName}" AS "${alias}"`;
   };
 
   addJoinQuery = (

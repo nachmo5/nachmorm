@@ -1,4 +1,4 @@
-import { ClientConfig } from 'pg';
+import { ClientConfig, QueryResult } from 'pg';
 import { FieldTypeEnum, AggregateEnum, OperatorEnum, ReservedDefaultValueEnum } from './enums';
 
 export interface Config {
@@ -10,6 +10,21 @@ export interface OutputAst {
   name: string;
   fields?: (string | OutputAst)[];
   args?: SelectArguments;
+}
+
+export interface Connection {
+  select: (entityName: string, ast: OutputAst) => Promise<any>;
+  selectOne: (entityName: string, ast: OutputAst) => Promise<any>;
+  aggregate: (
+    entityName: string,
+    type: Aggregate,
+    fieldOrOne: string | number,
+    where: WhereAst
+  ) => Promise<any>;
+  insert: (entityName: string, ast: Record<string, unknown>) => Promise<any>;
+  update: (entityName: string, ast: Record<string, unknown>, where: WhereAst) => Promise<any>;
+  delete: (entityName: string, where: WhereAst) => Promise<any>;
+  raw: (query: string, values: any[]) => Promise<QueryResult<any>>;
 }
 
 // -------------------------------------------------------------------------

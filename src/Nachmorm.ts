@@ -1,9 +1,9 @@
-import { Entity, Config } from './typings';
+import { Entity, Config, Connection } from './typings';
 import DatabaseClient from './DatabaseClient';
 import Schema from './Schema';
 import Dictionary from './Dictionary';
 import Synchronizer from './Synchronizer';
-import { Connection } from './Connection';
+import createConnection from './createConnection';
 
 export default class Nachmorm {
   $schema: Schema;
@@ -19,12 +19,8 @@ export default class Nachmorm {
   connect = async (synchronize: boolean = true): Promise<Connection> => {
     await this.$client.connect();
     if (synchronize) {
-      await new Synchronizer(
-        this.$schema,
-        this.$dictionary,
-        this.$client
-      ).synchronize();
+      await new Synchronizer(this.$schema, this.$dictionary, this.$client).synchronize();
     }
-    return new Connection(this.$schema, this.$dictionary, this.$client);
+    return createConnection(this.$schema, this.$dictionary, this.$client);
   };
 }

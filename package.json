@@ -1,12 +1,12 @@
 {
   "name": "nachmorm",
-  "version": "0.1.11",
+  "version": "0.1.13",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "compile": "npx tsc",
-    "prepublish": "npx tsc",
+    "prepare": "npm version patch && npx tsc",
     "dev": "ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -21,9 +21,10 @@
   },
   "homepage": "https://github.com/nachmo5/nachmorm#readme",
   "devDependencies": {
-    "tslint": "^6.1.3",
-    "tslint-config-airbnb": "^5.11.2",
-    "typescript": "^3.9.7"
+    "@typescript-eslint/eslint-plugin": "^4.9.0",
+    "@typescript-eslint/parser": "^4.9.0",
+    "eslint": "^7.15.0",
+    "typescript": "^4.1.2"
   },
   "dependencies": {
     "@types/lodash.snakecase": "^4.1.6",

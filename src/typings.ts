@@ -1,15 +1,15 @@
-import { ClientConfig, QueryResult } from 'pg';
-import { FieldTypeEnum, AggregateEnum, OperatorEnum, ReservedDefaultValueEnum } from './enums';
+import { PoolConfig, QueryResult } from 'pg';
+import {
+  FieldTypeEnum,
+  AggregateEnum,
+  OperatorEnum,
+  ReservedDefaultValueEnum,
+  QueryTypeEnum,
+} from './enums';
 
 export interface Config {
-  connection: ClientConfig;
+  connection: PoolConfig;
   logging?: boolean;
-}
-
-export interface OutputAst {
-  name: string;
-  fields?: (string | OutputAst)[];
-  args?: SelectArguments;
 }
 
 export interface Connection {
@@ -21,15 +21,57 @@ export interface Connection {
     fieldOrOne: string | number,
     where: WhereAst
   ) => Promise<any>;
-  insert: (entityName: string, ast: Record<string, unknown>) => Promise<any>;
-  update: (entityName: string, ast: Record<string, unknown>, where: WhereAst) => Promise<any>;
+  insert: (entityName: string, data: Record<string, unknown>) => Promise<any>;
+  update: (entityName: string, data: Record<string, unknown>, where: WhereAst) => Promise<any>;
   delete: (entityName: string, where: WhereAst) => Promise<any>;
+  transaction: (queries: Query[]) => Promise<any[]>;
   raw: (query: string, values: any[]) => Promise<QueryResult<any>>;
+}
+
+export interface OutputAst {
+  name: string;
+  fields?: (string | OutputAst)[];
+  args?: SelectArguments;
+}
+
+export interface Transaction {
+  query: (text: string, values: any[]) => Promise<QueryResult<any>>;
+  end: () => void;
+}
+
+// -------------------------------------------------------------------------
+// Query
+// -------------------------------------------------------------------------
+export interface Query {
+  entity: string;
+  type: QueryType;
+  args: SelectQueryArgs | AggregateQueryArgs | InsertQueryArgs | DeleteQueryArgs;
+}
+
+export interface SelectQueryArgs {
+  ast: OutputAst;
+  one?: boolean;
+}
+export interface AggregateQueryArgs {
+  type: Aggregate;
+  fieldOrOne: string | number;
+  where?: WhereAst;
+}
+export interface InsertQueryArgs {
+  data: Record<string, any>;
+}
+export interface UpdateQueryArgs {
+  where?: WhereAst;
+  data: Record<string, any>;
+}
+export interface DeleteQueryArgs {
+  where: WhereAst;
 }
 
 // -------------------------------------------------------------------------
 // Schema
 // -------------------------------------------------------------------------
+
 export interface Entity {
   name: string;
   fields?: Field[];
@@ -153,3 +195,5 @@ export type FieldType = keyof typeof FieldTypeEnum;
 export type Operator = keyof typeof OperatorEnum;
 
 export type ReservedDefaultValue = keyof typeof ReservedDefaultValueEnum;
+
+export type QueryType = keyof typeof QueryTypeEnum;

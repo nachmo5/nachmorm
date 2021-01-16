@@ -91,3 +91,11 @@ export enum ReservedDefaultValueEnum {
   'timeofday()',
   'transaction_timestamp()',
 }
+
+export enum QueryTypeEnum {
+  select = 'select',
+  insert = 'insert',
+  update = 'update',
+  delete = 'delete',
+  aggregate = 'aggregate',
+}

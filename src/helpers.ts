@@ -38,3 +38,13 @@ export const now = () => {
   const time = [today.getHours(), today.getMinutes(), today.getSeconds()].join(':');
   return `${date} ${time}`;
 };
+
+export const seqAsync = (arr: any[], cb: (e: any) => Promise<any>) =>
+  arr.reduce(
+    (acc: Promise<any>, f) =>
+      acc.then(async (result) => {
+        const nextResult = await cb(f);
+        return [...result, nextResult];
+      }),
+    Promise.resolve([])
+  );

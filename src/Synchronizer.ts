@@ -138,7 +138,7 @@ export default class Synchronizer {
     if (constraints.primary) strConstraints.push('PRIMARY KEY');
     if (constraints.unique) strConstraints.push('UNIQUE');
     if (constraints.notNull) strConstraints.push('NOT NULL');
-    if (constraints.defaultValue) {
+    if (constraints.defaultValue !== undefined) {
       let parsedDefaultValue: string = '';
       if (Object.keys(ReservedDefaultValueEnum).includes(constraints.defaultValue as string)) {
         parsedDefaultValue = constraints.defaultValue as string;
